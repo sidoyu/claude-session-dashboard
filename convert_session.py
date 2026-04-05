@@ -133,7 +133,7 @@ STRINGS = {
         "search_col_duration": "지속",
         "search_col_messages": "메시지",
         "search_col_matches": "매칭",
-        "search_failed": "검색 실패 - 서버에 연결할 수 ���습니다",
+        "search_failed": "검색 실패 - 서버에 연결할 수 없습니다",
         # Duration units
         "dur_s": "초", "dur_m": "분", "dur_h": "시간", "dur_d": "일",
         "dur_w": "주", "dur_mo": "개월", "dur_y": "년",
@@ -258,7 +258,7 @@ def localize_html(html_str):
         ('placeholder="대화 내용 검색..."', f'placeholder="{t("search_placeholder")}"'),
         (">검색</button>", f">{t('search_btn')}</button>"),
         ("> 활성 세션만 보기", f"> {t('active_only')}"),
-        ("> 숨긴 ��션 보기", f"> {t('show_hidden')}"),
+        ("> 숨긴 세션 보기", f"> {t('show_hidden')}"),
         (">대화</th>", f">{t('col_session')}</th>"),
         (">ID</th>", f">{t('col_id')}</th>"),
         (">조작</th>", f">{t('col_control')}</th>"),
