@@ -30,10 +30,22 @@ This tool runs a web server on your desktop so you can browse and control sessio
 └─────────────┘                    └──────────────────┘
 
  ✓ Browse session conversations (markdown rendered)
- ✓ Start / stop / resume sessions
+ ✓ Start new sessions / resume existing ones / stop
+ ✓ Connect to resumed sessions via claude.ai/code
  ✓ Full-text search across all conversations
  ✓ AI-generated session titles
 ```
+
+### How remote work flows
+
+When you want to work with Claude Code on your desktop while away:
+
+1. Open the dashboard (`http://desktop-ip:18080`) in your phone/tablet/laptop browser
+2. Tap **"Resume"** on an existing session, or start a new one with **"+ New Session"**
+3. Open [claude.ai/code](https://claude.ai/code) web app — it connects to that session (`--remote-control` is automatic)
+4. Continue the conversation from the web app
+
+> **Note:** You don't run Claude Code CLI on the remote device. All sessions run on your desktop. Remote devices connect via the **claude.ai/code web app** or **Claude app's Code feature**.
 
 ## Screenshots
 
