@@ -2,35 +2,37 @@
 
 [한국어](README.md)
 
-Run [Claude Code](https://claude.ai/code) on your Mac Mini (or desktop), and monitor/control sessions remotely from your phone, tablet, or laptop — anywhere.
+## Who this is for
 
-## Why this exists
+- You keep a Mac Mini or desktop **always on**, running [Claude Code](https://claude.ai/code)
+- You often start sessions and leave your desk
+- You want to check on sessions from your **phone or laptop** while away
 
-Claude Code is a terminal-based tool. You start a session on your desktop, leave the house, and then... you have no way to check on it.
+This tool assumes you have one always-connected desktop as your Claude Code machine, and you control it remotely from other devices while on the go.
 
-**The problem I kept running into:**
+## What problem this solves
 
-- I'd leave a Claude Code session running on my Mac Mini and go out — no way to see progress from my phone
-- Wanted to check "how did that session turn out?" but had to wait until I got home to open a terminal
-- If a session finished, I wanted to kick off a new one remotely — no way to do that
-- Hundreds of accumulated sessions, impossible to find old conversations — can't grep through JSONL files on a phone
+Claude Code is a terminal-based tool. When you start a session on your desktop and leave:
 
-**What this solves:**
+- **No way to check progress** — did it finish? did it error out?
+- **Have to go back to the terminal** just to see the result
+- Session finished? **Can't start a new one remotely**
+- Hundreds of sessions piled up — **impossible to search** through JSONL files
+
+This tool runs a web server on your desktop so you can browse and control sessions from any browser, on any device.
 
 ```
-┌─────────────┐                    ┌──────────────┐
-│ On the go    │   VPN / LAN       │  Home desktop │
-│ Phone/Tablet │ ──────────────────▶│  Claude Code  │
-│ Laptop       │   Web dashboard    │  running here │
-└─────────────┘                    └──────────────┘
+┌─────────────┐                    ┌──────────────────┐
+│ On the go    │   VPN / LAN       │  Home / Office    │
+│ Phone/Tablet │ ──────────────────▶│  Always-on desktop│
+│ Laptop       │   Web dashboard    │  Claude Code here │
+└─────────────┘                    └──────────────────┘
 
  ✓ Browse session conversations (markdown rendered)
  ✓ Start / stop / resume sessions
  ✓ Full-text search across all conversations
  ✓ AI-generated session titles
 ```
-
-Built for the workflow where one desktop is your Claude Code machine, and portable devices are your remote control while on the go.
 
 ## Screenshots
 
