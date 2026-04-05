@@ -7,9 +7,9 @@
 - You keep a Mac Mini or desktop **always on**, running [Claude Code](https://claude.ai/code)
 - You often start sessions and leave your desk
 - You want to check on sessions from your **phone or laptop** while away
-- You want to **kick off new tasks** on your desktop remotely
+- You want to **kick off new tasks** or **resume existing sessions** on your desktop remotely
 
-This tool assumes you have one always-connected desktop as your Claude Code machine, and you monitor and dispatch work to it from other devices while on the go. Sessions started from the dashboard automatically get the `--remote-control` flag, so you can also connect via [claude.ai/code](https://claude.ai/code) web app.
+This tool assumes you have one always-connected desktop as your Claude Code machine, and you monitor and dispatch work to it from other devices while on the go. Sessions started or resumed from the dashboard automatically get the `--remote-control` flag, so you can connect via [claude.ai/code](https://claude.ai/code) web app.
 
 ## What problem this solves
 

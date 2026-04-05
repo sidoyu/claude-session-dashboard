@@ -199,3 +199,15 @@ if [ -z "$ANTHROPIC_API_KEY" ]; then
     echo "   python3 ${SCRIPT_DIR}/convert_session.py --force"
     echo ""
 fi
+
+# 선택: Trust dialog 안내
+echo "💡 팁: 대시보드에서 새 세션을 시작할 때 trust dialog이 뜨면"
+echo "   세션이 자동으로 진행되지 않을 수 있습니다."
+echo "   이를 건너뛰려면 다음 설정을 추가하세요 (선택사항):"
+echo ""
+echo "   # ~/.claude.json"
+echo '   { "hasTrustDialogAccepted": true }'
+echo ""
+echo "   # ~/.claude/settings.json 의 최상위에"
+echo '   "skipDangerousModePermissionPrompt": true'
+echo ""
