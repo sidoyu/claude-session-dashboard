@@ -27,6 +27,21 @@ I use Claude Code extensively for my daily work. After accumulating hundreds of 
 | **Export** | Download any session as a self-contained HTML file |
 | **Hide sessions** | Hide sessions you don't want cluttering the list |
 
+## How is this different?
+
+There are several great Claude Code log viewers out there ([clear-code](https://github.com/chatgptprojects/clear-code), [sniffly](https://github.com/chiphuyen/sniffly), [cclogviewer](https://github.com/Brads3290/cclogviewer), etc.). This project focuses on a different use case:
+
+| | Most viewers | This project |
+|---|---|---|
+| **Access** | Desktop only | Phone, tablet, any browser (via local server) |
+| **Session control** | Read-only | Start, stop, resume sessions from the web UI |
+| **Search** | Client-side or none | Server-side full-text search across all JSONL files |
+| **Titles** | Filename or first message | AI-generated summaries via Claude Haiku |
+| **Multi-device** | Single machine | Primary + proxy architecture for VPN setups |
+| **Dependencies** | Node.js, Go, or npm install | Python 3 stdlib only — zero dependencies |
+
+If you just need a quick log viewer, [cclogviewer](https://github.com/Brads3290/cclogviewer) or [clear-code](https://github.com/chatgptprojects/clear-code) are excellent choices. This project is for when you want a **persistent, phone-accessible dashboard** that also lets you **control sessions remotely**.
+
 ## Screenshots
 
 After running the dashboard, you'll see:
