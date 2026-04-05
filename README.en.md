@@ -32,6 +32,22 @@ Claude Code is a terminal-based tool. You start a session on your desktop, leave
 
 Built for the workflow where one desktop is your Claude Code machine, and portable devices are your remote control while on the go.
 
+## Screenshots
+
+### Desktop
+
+![Desktop Dashboard](screenshots/desktop-dashboard.png)
+![Desktop Session](screenshots/desktop-session.png)
+![Desktop Search](screenshots/desktop-search.png)
+
+### Mobile (iPhone)
+
+<p float="left">
+  <img src="screenshots/mobile-dashboard.png" width="250" />
+  <img src="screenshots/mobile-session.png" width="250" />
+  <img src="screenshots/mobile-search.png" width="250" />
+</p>
+
 ## Features
 
 | Feature | Description |

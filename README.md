@@ -63,11 +63,29 @@ Claude Code 로그 뷰어는 이미 여러 좋은 프로젝트가 있습니다 (
 
 ## 스크린샷
 
-대시보드를 실행하면 다음과 같은 화면을 볼 수 있습니다:
+### 데스크탑
 
-- **대시보드** — 최신순으로 정렬된 전체 세션 테이블
-- **세션 상세** — 마크다운 렌더링, 구문 강조, 도구 사용 내역이 포함된 전체 대화
-- **검색** — 하이라이트된 스니펫과 함께 실시간 검색
+**대시보드** — 세션 목록, 활성/비활성 상태, 시작/중지 제어
+
+![Desktop Dashboard](screenshots/desktop-dashboard.png)
+
+**세션 상세** — 마크다운 렌더링, 구문 강조, 도구 사용 내역
+
+![Desktop Session](screenshots/desktop-session.png)
+
+**검색** — 서버사이드 전문 검색, 하이라이트 스니펫
+
+![Desktop Search](screenshots/desktop-search.png)
+
+### 모바일 (iPhone)
+
+폰에서 접속한 모습. 밖에서도 세션을 확인하고 제어할 수 있습니다.
+
+<p float="left">
+  <img src="screenshots/mobile-dashboard.png" width="250" />
+  <img src="screenshots/mobile-session.png" width="250" />
+  <img src="screenshots/mobile-search.png" width="250" />
+</p>
 
 ## 빠른 시작
 
