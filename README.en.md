@@ -85,6 +85,12 @@ There are several great Claude Code log viewers ([clear-code](https://github.com
 
 ### Install (one-time)
 
+Just tell Claude Code:
+
+> Clone https://github.com/sidoyu/claude-session-dashboard and run install.sh
+
+Or manually:
+
 ```bash
 git clone https://github.com/sidoyu/claude-session-dashboard.git
 cd claude-session-dashboard

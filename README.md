@@ -97,6 +97,12 @@ Claude Code 로그 뷰어는 이미 여러 좋은 프로젝트가 있습니다 (
 
 ### 설치 (한 번만)
 
+Claude Code에게 이렇게 말하면 됩니다:
+
+> https://github.com/sidoyu/claude-session-dashboard 이거 클론하고 install.sh 실행해줘
+
+또는 직접:
+
 ```bash
 git clone https://github.com/sidoyu/claude-session-dashboard.git
 cd claude-session-dashboard
