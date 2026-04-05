@@ -1,0 +1,21 @@
+# Generated HTML files
+*.html
+
+# Session data
+*.jsonl
+summaries.json
+hidden_sessions.json
+search_index.json
+
+# Config with personal settings
+config.json
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Backups
+backup-*/
