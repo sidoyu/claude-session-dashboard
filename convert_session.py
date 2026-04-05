@@ -43,6 +43,283 @@ PROJECTS_DIR = os.environ.get("CLAUDE_PROJECTS_DIR", _find_projects_dir())
 _tz_offset = int(os.environ.get("CLAUDE_DASHBOARD_TZ", "9"))
 LOCAL_TZ = timezone(timedelta(hours=_tz_offset))
 
+# ─── Language / i18n ───
+
+# Load lang from config.json if exists, else env var, else "ko"
+def _get_lang():
+    config_path = os.path.join(SCRIPT_DIR, "config.json")
+    if os.path.isfile(config_path):
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+                if cfg.get("lang"):
+                    return cfg["lang"]
+        except Exception:
+            pass
+    return os.environ.get("CLAUDE_DASHBOARD_LANG", "ko")
+
+LANG = _get_lang()
+
+STRINGS = {
+    "ko": {
+        # Session detail page
+        "edit_btn": "수정",
+        "back_to_list": "&larr; 전체 목록",
+        "search_link": "검색",
+        "export_link": "내보내기",
+        "resume_btn": "활성",
+        "hide_btn": "숨기기",
+        "unhide_btn": "숨기기 해제",
+        "copied": "복사됨!",
+        "active_label": "활성",
+        "edited_badge": "(수정됨)",
+        "starting": "시작 중...",
+        "active_state": "활성됨",
+        "failed": "실패",
+        "failed_start": "세션 시작 실패: ",
+        "cannot_connect": "서버에 연결할 수 없습니다.",
+        "subagent_title": "서브에이전트 세션 (resume 불가)",
+        # Time ago
+        "just_now": "방금 전",
+        "seconds_ago": "초 전",
+        "minutes_ago": "분 전",
+        "hours_ago": "시간 전",
+        "days_ago": "일 전",
+        "months_ago": "개월 전",
+        "years_ago": "년 전",
+        # Index page
+        "dashboard_title": "Claude Code 대화 기록",
+        "sessions_count": "개 세션",
+        "search_placeholder": "대화 내용 검색...",
+        "search_btn": "검색",
+        "active_only": "활성 세션만 보기",
+        "show_hidden": "숨긴 세션 보기",
+        "col_session": "대화",
+        "col_id": "ID",
+        "col_control": "조작",
+        "col_last_active": "마지막 대화",
+        "col_start": "시작",
+        "col_end": "종료",
+        "col_duration": "지속",
+        "col_messages": "메시지",
+        "new_session_placeholder": "새 세션을 시작할 메시지를 입력하세요... (Cmd+Enter로 전송)",
+        "new_session_btn": "+ 새 세션",
+        "creating": "생성 중",
+        "session_started": "세션 시작됨!",
+        "enter_message": "시작 메시지를 입력하세요.",
+        "click_to_copy": "클릭하여 복사",
+        "resume_label": "활성",
+        "stop_btn": "중지",
+        "stop_confirm": "이 세션을 중지할까요?",
+        "stopping": "중지 중...",
+        "stopped": "중지됨",
+        "stop_failed": "중지 실패: ",
+        "start_failed": "세션 시작 실패: ",
+        "pull_to_refresh": "당겨서 새로고침",
+        "release_to_refresh": "놓으면 새로고침",
+        "refreshing": "갱신 중...",
+        "done": "완료",
+        # Search page
+        "search_title": "대화 검색 - Claude Code",
+        "search_heading": "대화 검색",
+        "all_sessions_link": "&larr; 전체 목록",
+        "search_input_placeholder": "검색어를 입력하세요 (2자 이상)...",
+        "search_status_default": "검색어를 입력하세요 (2자 이상)",
+        "searching": "검색 중...",
+        "matches_format": "개 세션에서 {total}건 발견",
+        "search_col_session": "대화",
+        "search_col_start": "시작",
+        "search_col_end": "종료",
+        "search_col_duration": "지속",
+        "search_col_messages": "메시지",
+        "search_col_matches": "매칭",
+        "search_failed": "검색 실패 - 서버에 연결할 수 ���습니다",
+        # Duration units
+        "dur_s": "초", "dur_m": "분", "dur_h": "시간", "dur_d": "일",
+        "dur_w": "주", "dur_mo": "개월", "dur_y": "년",
+    },
+    "en": {
+        "edit_btn": "Edit",
+        "back_to_list": "&larr; All sessions",
+        "search_link": "Search",
+        "export_link": "Export",
+        "resume_btn": "Resume",
+        "hide_btn": "Hide",
+        "unhide_btn": "Unhide",
+        "copied": "Copied!",
+        "active_label": "Active",
+        "edited_badge": "(edited)",
+        "starting": "Starting...",
+        "active_state": "Active",
+        "failed": "Failed",
+        "failed_start": "Failed to start session: ",
+        "cannot_connect": "Cannot connect to server.",
+        "subagent_title": "Sub-agent session (cannot resume)",
+        "just_now": "just now",
+        "seconds_ago": "s ago",
+        "minutes_ago": "m ago",
+        "hours_ago": "h ago",
+        "days_ago": "d ago",
+        "months_ago": "mo ago",
+        "years_ago": "y ago",
+        "dashboard_title": "Claude Code Session Dashboard",
+        "sessions_count": " sessions",
+        "search_placeholder": "Search conversations...",
+        "search_btn": "Search",
+        "active_only": "Active sessions only",
+        "show_hidden": "Show hidden sessions",
+        "col_session": "Session",
+        "col_id": "ID",
+        "col_control": "Control",
+        "col_last_active": "Last active",
+        "col_start": "Start",
+        "col_end": "End",
+        "col_duration": "Duration",
+        "col_messages": "Messages",
+        "new_session_placeholder": "Type a message to start a new session... (Cmd+Enter to send)",
+        "new_session_btn": "+ New Session",
+        "creating": "Creating",
+        "session_started": "Session started!",
+        "enter_message": "Please enter a message.",
+        "click_to_copy": "Click to copy",
+        "resume_label": "Resume",
+        "stop_btn": "Stop",
+        "stop_confirm": "Stop this session?",
+        "stopping": "Stopping...",
+        "stopped": "Stopped",
+        "stop_failed": "Stop failed: ",
+        "start_failed": "Start failed: ",
+        "pull_to_refresh": "Pull to refresh",
+        "release_to_refresh": "Release to refresh",
+        "refreshing": "Refreshing...",
+        "done": "Done",
+        "search_title": "Search - Claude Code Sessions",
+        "search_heading": "Search Sessions",
+        "all_sessions_link": "&larr; All sessions",
+        "search_input_placeholder": "Enter search query (min 2 chars)...",
+        "search_status_default": "Enter a search query (2+ characters)",
+        "searching": "Searching...",
+        "matches_format": " matches in {sessions} sessions",
+        "search_col_session": "Session",
+        "search_col_start": "Start",
+        "search_col_end": "End",
+        "search_col_duration": "Duration",
+        "search_col_messages": "Messages",
+        "search_col_matches": "Matches",
+        "search_failed": "Search failed - cannot connect to server",
+        "dur_s": "s", "dur_m": "m", "dur_h": "h", "dur_d": "d",
+        "dur_w": "w", "dur_mo": "mo", "dur_y": "y",
+    }
+}
+
+def t(key):
+    """Get translated string."""
+    return STRINGS.get(LANG, STRINGS["ko"]).get(key, STRINGS["ko"].get(key, key))
+
+
+def localize_html(html_str):
+    """Replace Korean UI strings with target language if LANG != 'ko'."""
+    if LANG == "ko":
+        return html_str
+    # Map of Korean strings -> target language strings
+    replacements = [
+        # Session detail page
+        ('>수정</button>', f'>{t("edit_btn")}</button>'),
+        ('&larr; 전체 목록', t("back_to_list")),
+        ('>검색</a>', f'>{t("search_link")}</a>'),
+        ('>내보내기</a>', f'>{t("export_link")}</a>'),
+        ('>활성</button>', f'>{t("resume_btn")}</button>'),
+        ('>숨기기</button>', f'>{t("hide_btn")}</button>'),
+        ("'복사됨!'", f"'{t('copied')}'"),
+        ("'Copied!'", f"'{t('copied')}'"),
+        ("방금 전", t("just_now")),
+        ("초 전", t("seconds_ago")),
+        ("분 전", t("minutes_ago")),
+        ("시간 전", t("hours_ago")),
+        ("일 전", t("days_ago")),
+        ("개월 전", t("months_ago")),
+        ("년 전", t("years_ago")),
+        ("'>활성</span>'", f"'>{t('active_label')}</span>'"),
+        ("활성됨", t("active_state")),
+        ("'(수정됨)'", f"'({t('edited_badge')})'"),
+        ("'(edited)'", f"'({t('edited_badge')})'"),
+        ("' (수정됨)'", f"' ({t('edited_badge')})'"),
+        ("' (edited)'", f"' ({t('edited_badge')})'"),
+        ("'시작 중...'", f"'{t('starting')}'"),
+        ("'실패'", f"'{t('failed')}'"),
+        ("'세션 시작 실패: '", f"'{t('failed_start')}'"),
+        ("'서버에 연결할 수 없습니다.'", f"'{t('cannot_connect')}'"),
+        ("서브에이전트 세션 (resume 불가)", t("subagent_title")),
+        ("'숨기기 해제'", f"'{t('unhide_btn')}'"),
+        ("'숨기기'", f"'{t('hide_btn')}'"),
+        # Index page
+        (">Claude Code 대화 기록</", f">{t('dashboard_title')}</"),
+        ("개 세션</div>", f"{t('sessions_count')}</div>"),
+        ('placeholder="대화 내용 검색..."', f'placeholder="{t("search_placeholder")}"'),
+        (">검색</button>", f">{t('search_btn')}</button>"),
+        ("> 활성 세션만 보기", f"> {t('active_only')}"),
+        ("> 숨긴 ��션 보기", f"> {t('show_hidden')}"),
+        (">대화</th>", f">{t('col_session')}</th>"),
+        (">ID</th>", f">{t('col_id')}</th>"),
+        (">조작</th>", f">{t('col_control')}</th>"),
+        (">마지막 대화<", f">{t('col_last_active')}<"),
+        (">시작<", f">{t('col_start')}<"),
+        (">종료<", f">{t('col_end')}<"),
+        (">지속<", f">{t('col_duration')}<"),
+        (">메시지<", f">{t('col_messages')}<"),
+        ('placeholder="새 세션을 시작할 메시지를 입력하세요... (Cmd+Enter로 전송)"',
+         f'placeholder="{t("new_session_placeholder")}"'),
+        (">+ 새 세션</button>", f">{t('new_session_btn')}</button>"),
+        ("'생성 중'", f"'{t('creating')}'"),
+        ("'세션 시작됨!'", f"'{t('session_started')}'"),
+        ("'+ 새 세션'", f"'{t('new_session_btn')}'"),
+        ("'시작 메시지를 입력하세요.'", f"'{t('enter_message')}'"),
+        ("'클릭하여 복사'", f"'{t('click_to_copy')}'"),
+        ("'활성'", f"'{t('resume_label')}'"),
+        ("'중지'", f"'{t('stop_btn')}'"),
+        ("'이 세션을 중지할까요?'", f"'{t('stop_confirm')}'"),
+        ("'중지 중...'", f"'{t('stopping')}'"),
+        ("'중지됨'", f"'{t('stopped')}'"),
+        ("'중지 실패: '", f"'{t('stop_failed')}'"),
+        ("'당겨서 새로고침'", f"'{t('pull_to_refresh')}'"),
+        ("'놓으면 새로고침'", f"'{t('release_to_refresh')}'"),
+        ("'갱신 중...'", f"'{t('refreshing')}'"),
+        ("'완료'", f"'{t('done')}'"),
+        # Search page
+        (">대화 검색 - Claude Code</title>", f">{t('search_title')}</title>"),
+        (">대화 검색</h1>", f">{t('search_heading')}</h1>"),
+        ('placeholder="검색어를 입력하세요 (2자 이상)..."',
+         f'placeholder="{t("search_input_placeholder")}"'),
+        ("'검색어를 입력하세요 (2자 이상)'", f"'{t('search_status_default')}'"),
+        ("'검색 중...'", f"'{t('searching')}'"),
+        ("'검색 실패 - 서버에 연결할 수 없습니다'", f"'{t('search_failed')}'"),
+        (">대화</th>", f">{t('search_col_session')}</th>"),
+        (">매칭</th>", f">{t('search_col_matches')}</th>"),
+    ]
+    for old, new in replacements:
+        html_str = html_str.replace(old, new)
+    return html_str
+
+
+def _js_time_ago_func():
+    """Generate the timeAgo JS function for the current language."""
+    return f"""function timeAgo(date) {{
+    var now = new Date();
+    var seconds = Math.floor((now - date) / 1000);
+    if (seconds < 0) return '{t("just_now")}';
+    if (seconds < 60) return seconds + '{t("seconds_ago")}';
+    var minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return minutes + '{t("minutes_ago")}';
+    var hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours + '{t("hours_ago")}';
+    var days = Math.floor(hours / 24);
+    if (days < 30) return days + '{t("days_ago")}';
+    var months = Math.floor(days / 30);
+    if (months < 12) return months + '{t("months_ago")}';
+    var years = Math.floor(days / 365);
+    return years + '{t("years_ago")}';
+  }}"""
+
 
 def to_local(dt):
     """Convert datetime to local timezone."""
@@ -53,32 +330,32 @@ def format_duration(td):
     """Convert timedelta to human-readable string."""
     total_seconds = int(td.total_seconds())
     if total_seconds < 0:
-        return "0s"
+        return f"0{t('dur_s')}"
     if total_seconds < 60:
-        return f"{total_seconds}s"
+        return f"{total_seconds}{t('dur_s')}"
     total_minutes = total_seconds // 60
     if total_minutes < 60:
-        return f"{total_minutes}m"
+        return f"{total_minutes}{t('dur_m')}"
     hours = total_minutes // 60
     minutes = total_minutes % 60
     if hours < 24:
         if minutes == 0:
-            return f"{hours}h"
-        return f"{hours}h {minutes}m"
+            return f"{hours}{t('dur_h')}"
+        return f"{hours}{t('dur_h')} {minutes}{t('dur_m')}"
     days = hours // 24
     if days < 7:
-        return f"{days}d"
+        return f"{days}{t('dur_d')}"
     weeks = days // 7
     if days < 30:
-        return f"{weeks}w"
+        return f"{weeks}{t('dur_w')}"
     months = days // 30
     if months < 12:
-        return f"{months}mo"
+        return f"{months}{t('dur_mo')}"
     years = days // 365
     remaining_months = (days - years * 365) // 30
     if remaining_months == 0:
-        return f"{years}y"
-    return f"{years}y {remaining_months}mo"
+        return f"{years}{t('dur_y')}"
+    return f"{years}{t('dur_y')} {remaining_months}{t('dur_mo')}"
 
 
 def load_summaries():
@@ -239,7 +516,7 @@ def get_summary(session_id, jsonl_path, summaries_cache):
 
 
 HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="en">
+<html lang="ko"
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -433,18 +710,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <div class="header">
   <div class="title-wrap">
     <h1 id="sessionTitle">{title}</h1>
-    <button class="title-edit-btn" onclick="startTitleEdit()">Edit</button>
+    <button class="title-edit-btn" onclick="startTitleEdit()">수정</button>
   </div>
   <div class="meta">{meta}</div>
   <div style="margin-top:6px;font-size:0.85em;">
     <span id="activeInfo"></span>
   </div>
   <div class="nav">
-    <a href="index.html">Back to list</a>
-    <a href="search.html">Search</a>
-    <a href="#" onclick="exportPage(); return false;">Export</a>
-    <button id="resumeBtn" onclick="resumeSession()" style="padding:4px 12px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;font-size:0.85em;cursor:pointer;">Resume</button>
-    <button id="hideBtn" onclick="toggleHideSession()" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.85em;cursor:pointer;margin-left:4px;">Hide</button>
+    <a href="index.html">&larr; 전체 목록</a>
+    <a href="search.html">검색</a>
+    <a href="#" onclick="exportPage(); return false;">내보내기</a>
+    <button id="resumeBtn" onclick="resumeSession()" style="padding:4px 12px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;font-size:0.85em;cursor:pointer;">활성</button>
+    <button id="hideBtn" onclick="toggleHideSession()" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.85em;cursor:pointer;margin-left:4px;">숨기기</button>
   </div>
 </div>
 <div class="container">
@@ -464,7 +741,7 @@ function copyText(text, el) {{
     document.body.removeChild(ta);
   }}
   var orig = el.textContent;
-  el.textContent = 'Copied!';
+  el.textContent = '복사됨!';
   setTimeout(function() {{ el.textContent = orig; }}, 5000);
 }}
 </script>
@@ -473,18 +750,18 @@ function copyText(text, el) {{
   function timeAgo(date) {{
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
-    if (seconds < 0) return 'just now';
-    if (seconds < 60) return seconds + 's ago';
+    if (seconds < 0) return '방금 전';
+    if (seconds < 60) return seconds + '초 전';
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return minutes + 'm ago';
+    if (minutes < 60) return minutes + '분 전';
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + 'h ago';
+    if (hours < 24) return hours + '시간 전';
     const days = Math.floor(hours / 24);
-    if (days < 30) return days + 'd ago';
+    if (days < 30) return days + '일 전';
     const months = Math.floor(days / 30);
-    if (months < 12) return months + 'mo ago';
+    if (months < 12) return months + '개월 전';
     const years = Math.floor(days / 365);
-    return years + 'y ago';
+    return years + '년 전';
   }}
   document.querySelectorAll('.time-ago').forEach(function(el) {{
     var d = new Date(el.dataset.time);
@@ -537,7 +814,7 @@ var ORIGINAL_TITLE = document.getElementById('sessionTitle').textContent;
       var info = activeMap[sid];
       if (info) {{
         var el = document.getElementById('activeInfo');
-        el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#d97757;border-radius:50%;animation:pulse 1.5s ease-in-out infinite;vertical-align:middle;margin-right:4px;"></span><span style="color:#d97757;font-weight:600;">Active</span>';
+        el.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#d97757;border-radius:50%;animation:pulse 1.5s ease-in-out infinite;vertical-align:middle;margin-right:4px;"></span><span style="color:#d97757;font-weight:600;">활성</span>';
       }}
     }})
     .catch(function() {{}});
@@ -547,7 +824,7 @@ function addEditedBadge() {{
   if (document.getElementById('editedBadge')) return;
   var badge = document.createElement('span');
   badge.id = 'editedBadge';
-  badge.textContent = '(edited)';
+  badge.textContent = '(수정됨)';
   badge.style.cssText = 'font-size:0.6em; color:var(--text-muted); font-weight:400; margin-left:8px;';
   document.getElementById('sessionTitle').appendChild(badge);
 }}
@@ -614,7 +891,7 @@ function exportPage() {{
     .then(function(list) {{
       var hidden = new Set(list);
       if (hidden.has(sid)) {{
-        btn.textContent = 'Unhide';
+        btn.textContent = '숨기기 해제';
         btn.style.borderColor = 'var(--accent)';
         btn.style.color = 'var(--accent)';
       }}
@@ -637,7 +914,7 @@ window.toggleHideSession = function() {{
         btn.style.color = 'var(--text-muted)';
       }} else {{
         hidden.add(sid);
-        btn.textContent = 'Unhide';
+        btn.textContent = '숨기기 해제';
         btn.style.borderColor = 'var(--accent)';
         btn.style.color = 'var(--accent)';
       }}
@@ -654,24 +931,24 @@ window.toggleHideSession = function() {{
 function resumeSession() {{
   var sid = document.body.dataset.sid;
   var btn = document.getElementById('resumeBtn');
-  btn.textContent = 'Starting...';
+  btn.textContent = '시작 중...';
   btn.disabled = true;
   fetch('/start/' + sid)
     .then(function(r) {{ return r.json(); }})
     .then(function(data) {{
       if (data.status === 'ok') {{
-        btn.textContent = 'Active';
+        btn.textContent = '활성됨';
         btn.style.background = '#788c5d';
         btn.style.borderColor = '#788c5d';
       }} else {{
-        btn.textContent = 'Failed';
-        alert('Failed to start session: ' + (data.message || ''));
+        btn.textContent = '실패';
+        alert('세션 시작 실패: ' + (data.message || ''));
       }}
     }})
     .catch(function() {{
-      btn.textContent = 'Resume';
+      btn.textContent = '활성';
       btn.disabled = false;
-      alert('Cannot connect to server.');
+      alert('서버에 연결할 수 없습니다.');
     }});
 }}
 </script>
@@ -765,7 +1042,7 @@ def build_session_meta_html(session_id, start_dt, end_dt, msg_count):
     if is_agent:
         return (
             f'<span class="session-id" '
-            f'title="Sub-agent session (cannot resume)" '
+            f'title="서브에이전트 세션 (resume 불가)" '
             f'style="cursor:default;opacity:0.6">'
             f'Session: {short_id}...</span>'
             f' | {start_str} &rarr; {end_str} ({duration}) | {msg_count} messages'
@@ -896,6 +1173,7 @@ def convert_session(jsonl_path, summaries_cache=None):
         messages='\n'.join(messages_html)
     )
 
+    output_html = localize_html(output_html)
     output_path = os.path.join(OUTPUT_DIR, f"{session_id}.html")
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(output_html)
@@ -948,7 +1226,7 @@ def build_index(sessions):
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Claude Logs">
-<title>Claude Code Session Dashboard</title>
+<title>Claude Code 대화 기록</title>
 <style>
   :root {
     --bg: #faf9f5;
@@ -1210,48 +1488,48 @@ def build_index(sessions):
     <rect class="leg3" x="36" y="32" width="8" height="12" fill="var(--accent)"/>
     <rect class="leg4" x="48" y="32" width="8" height="12" fill="var(--accent)"/>
   </svg>
-  <h1>Claude Code Session Dashboard</h1>
+  <h1>Claude Code 대화 기록</h1>
 </div>
-<div class="subtitle">%%SESSION_COUNT%% sessions</div>
+<div class="subtitle">총 %%SESSION_COUNT%%개 세션</div>
 <div class="search-box">
-  <input type="text" id="searchInput" placeholder="Search conversations...">
-  <button onclick="goSearch()">Search</button>
+  <input type="text" id="searchInput" placeholder="대화 내용 검색...">
+  <button onclick="goSearch()">검색</button>
 </div>
 <div style="margin-bottom:16px;">
   <label style="font-size:0.85em;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
-    <input type="checkbox" id="activeOnly"> Active sessions only
+    <input type="checkbox" id="activeOnly"> 활성 세션만 보기
   </label>
   <label style="font-size:0.85em;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
-    <input type="checkbox" id="showHidden"> Show hidden sessions
+    <input type="checkbox" id="showHidden"> 숨긴 세션 보기
   </label>
 </div>
 <table id="sessionTable">
-<thead><tr><th>Session</th><th>ID</th><th>Control</th><th class="sortable" data-col="3" data-type="time">Last active<span class="sort-arrow">&#9660;</span></th><th class="sortable" data-col="4" data-type="text">Start<span class="sort-arrow"></span></th><th class="sortable" data-col="5" data-type="text">End<span class="sort-arrow"></span></th><th class="sortable" data-col="6" data-type="duration">Duration<span class="sort-arrow"></span></th><th class="sortable" data-col="7" data-type="num">Messages<span class="sort-arrow"></span></th></tr></thead>
+<thead><tr><th>대화</th><th>ID</th><th>조작</th><th class="sortable" data-col="3" data-type="time">마지막 대화<span class="sort-arrow">&#9660;</span></th><th class="sortable" data-col="4" data-type="text">시작<span class="sort-arrow"></span></th><th class="sortable" data-col="5" data-type="text">종료<span class="sort-arrow"></span></th><th class="sortable" data-col="6" data-type="duration">지속<span class="sort-arrow"></span></th><th class="sortable" data-col="7" data-type="num">메시지<span class="sort-arrow"></span></th></tr></thead>
 <tbody>
 %%TBODY%%
 </tbody>
 </table>
 <div class="new-session-bar">
-  <textarea id="newSessionInput" placeholder="Type a message to start a new session... (Cmd+Enter to send)"></textarea>
-  <button id="newSessionBtn" onclick="newSession()">+ New Session</button>
+  <textarea id="newSessionInput" placeholder="새 세션을 시작할 메시지를 입력하세요... (Cmd+Enter로 전송)"></textarea>
+  <button id="newSessionBtn" onclick="newSession()">+ 새 세션</button>
 </div>
 <script>
 (function() {
   function timeAgo(date) {
     var now = new Date();
     var seconds = Math.floor((now - date) / 1000);
-    if (seconds < 0) return 'just now';
-    if (seconds < 60) return seconds + 's ago';
+    if (seconds < 0) return '방금 전';
+    if (seconds < 60) return seconds + '초 전';
     var minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return minutes + 'm ago';
+    if (minutes < 60) return minutes + '분 전';
     var hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + 'h ago';
+    if (hours < 24) return hours + '시간 전';
     var days = Math.floor(hours / 24);
-    if (days < 30) return days + 'd ago';
+    if (days < 30) return days + '일 전';
     var months = Math.floor(days / 30);
-    if (months < 12) return months + 'mo ago';
+    if (months < 12) return months + '개월 전';
     var years = Math.floor(days / 365);
-    return years + 'y ago';
+    return years + '년 전';
   }
   document.querySelectorAll('.time-ago').forEach(function(el) {
     var d = new Date(el.dataset.time);
@@ -1262,7 +1540,7 @@ def build_index(sessions):
     if (saved) {
       a.textContent = saved;
       var badge = document.createElement('span');
-      badge.textContent = ' (edited)';
+      badge.textContent = ' (수정됨)';
       badge.style.cssText = 'font-size:0.8em; color:var(--text-muted); font-weight:400;';
       a.appendChild(badge);
     }
@@ -1279,12 +1557,12 @@ def build_index(sessions):
 
   window.newSession = function() {
     var msg = document.getElementById('newSessionInput').value.trim();
-    if (!msg) { alert('Please enter a message.'); return; }
+    if (!msg) { alert('시작 메시지를 입력하세요.'); return; }
     var btn = document.getElementById('newSessionBtn');
     btn.disabled = true;
     document.getElementById('newSessionInput').disabled = true;
     var dots = 0;
-    var baseText = 'Creating';
+    var baseText = '생성 중';
     btn.textContent = baseText;
     var animInterval = setInterval(function() {
       dots = (dots + 1) % 4;
@@ -1295,23 +1573,23 @@ def build_index(sessions):
       .then(function(data) {
         clearInterval(animInterval);
         if (data.status === 'ok') {
-          btn.textContent = 'Session started!';
+          btn.textContent = '세션 시작됨!';
           document.getElementById('newSessionInput').value = '';
           document.getElementById('newSessionInput').disabled = false;
-          setTimeout(function() { btn.textContent = '+ New Session'; btn.disabled = false; }, 2000);
+          setTimeout(function() { btn.textContent = '+ 새 세션'; btn.disabled = false; }, 2000);
         } else {
-          btn.textContent = '+ New Session';
+          btn.textContent = '+ 새 세션';
           btn.disabled = false;
           document.getElementById('newSessionInput').disabled = false;
-          alert('Failed: ' + (data.message || ''));
+          alert('실패: ' + (data.message || ''));
         }
       })
       .catch(function() {
         clearInterval(animInterval);
-        btn.textContent = '+ New Session';
+        btn.textContent = '+ 새 세션';
         btn.disabled = false;
         document.getElementById('newSessionInput').disabled = false;
-        alert('Cannot connect to server.');
+        alert('서버에 연결할 수 없습니다.');
       });
   };
 
@@ -1324,13 +1602,13 @@ def build_index(sessions):
 
   document.querySelectorAll('.sid-cell').forEach(function(cell) {
     cell.style.cursor = 'pointer';
-    cell.title = 'Click to copy';
+    cell.title = '클릭하여 복사';
     cell.addEventListener('click', function() {
       var sid = this.dataset.sid;
       var el = this;
       navigator.clipboard.writeText(sid).then(function() {
         var orig = el.textContent;
-        el.textContent = 'Copied!';
+        el.textContent = '복사됨!';
         setTimeout(function() { el.textContent = orig; }, 5000);
       });
     });
@@ -1342,7 +1620,7 @@ def build_index(sessions):
     if (cell) {
       var btn = document.createElement('button');
       btn.className = 'start-btn';
-      btn.textContent = 'Resume';
+      btn.textContent = '활성';
       btn.addEventListener('click', function(e) {
         e.preventDefault();
         startSession(sid, btn);
@@ -1351,7 +1629,7 @@ def build_index(sessions):
 
       var stopBtn = document.createElement('button');
       stopBtn.className = 'stop-btn';
-      stopBtn.textContent = 'Stop';
+      stopBtn.textContent = '중지';
       stopBtn.dataset.sid = sid;
       stopBtn.style.display = 'none';
       stopBtn.addEventListener('click', function(e) {
@@ -1412,14 +1690,14 @@ def build_index(sessions):
   document.getElementById('showHidden').addEventListener('change', applyHiddenFilter);
 
   function stopSession(sid, btn) {
-    if (!confirm('Stop this session?')) return;
-    btn.textContent = 'Stopping...';
+    if (!confirm('이 세션을 중지할까요?')) return;
+    btn.textContent = '중지 중...';
     btn.disabled = true;
     fetch('/stop/' + sid)
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.status === 'ok') {
-          btn.textContent = 'Stopped';
+          btn.textContent = '중지됨';
           btn.style.background = '#888';
           btn.style.color = '#fff';
           btn.style.borderColor = '#888';
@@ -1429,27 +1707,27 @@ def build_index(sessions):
           var sb = row.querySelector('.stop-btn');
           if (sb) sb.style.display = 'none';
           var ab = row.querySelector('.start-btn');
-          if (ab) { ab.style.display = ''; ab.textContent = 'Resume'; ab.disabled = false; }
+          if (ab) { ab.style.display = ''; ab.textContent = '활성'; ab.disabled = false; }
         } else {
-          btn.textContent = 'Failed';
-          alert('Stop failed: ' + (data.message || ''));
+          btn.textContent = '실패';
+          alert('중지 실패: ' + (data.message || ''));
         }
       })
       .catch(function() {
-        btn.textContent = 'Stop';
+        btn.textContent = '중지';
         btn.disabled = false;
-        alert('Cannot connect to server.');
+        alert('서버에 연결할 수 없습니다.');
       });
   }
 
   function startSession(sid, btn) {
-    btn.textContent = 'Starting...';
+    btn.textContent = '시작 중...';
     btn.disabled = true;
     fetch('/start/' + sid)
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.status === 'ok') {
-          btn.textContent = 'Active';
+          btn.textContent = '활성됨';
           btn.style.background = 'var(--green, #788c5d)';
           btn.style.color = '#fff';
           btn.style.borderColor = 'var(--green, #788c5d)';
@@ -1460,14 +1738,14 @@ def build_index(sessions):
           var sb = row.querySelector('.stop-btn');
           if (sb) sb.style.display = '';
         } else {
-          btn.textContent = 'Failed';
-          alert('Start failed: ' + (data.message || ''));
+          btn.textContent = '실패';
+          alert('세션 시작 실패: ' + (data.message || ''));
         }
       })
       .catch(function() {
-        btn.textContent = 'Resume';
+        btn.textContent = '활성';
         btn.disabled = false;
-        alert('Cannot connect to server.');
+        alert('서버에 연결할 수 없습니다.');
       });
   }
 
@@ -1530,7 +1808,7 @@ def build_index(sessions):
     var triggered = false;
     var indicator = document.createElement('div');
     indicator.style.cssText = 'position:fixed;top:0;left:0;right:0;text-align:center;padding:12px;background:var(--accent);color:#fff;font-size:0.85em;z-index:9999;transform:translateY(-100%);transition:transform 0.2s;';
-    indicator.textContent = 'Pull to refresh';
+    indicator.textContent = '당겨서 새로고침';
     document.body.appendChild(indicator);
 
     document.addEventListener('touchstart', function(e) {
@@ -1545,20 +1823,20 @@ def build_index(sessions):
       var diff = e.touches[0].clientY - startY;
       if (diff > 10 && diff <= 80) {
         indicator.style.transform = 'translateY(0)';
-        indicator.textContent = 'Pull to refresh';
+        indicator.textContent = '당겨서 새로고침';
         triggered = false;
       } else if (diff > 80) {
-        indicator.textContent = 'Release to refresh';
+        indicator.textContent = '놓으면 새로고침';
         triggered = true;
       }
     }, { passive: true });
 
     document.addEventListener('touchend', function() {
       if (triggered) {
-        indicator.textContent = 'Refreshing...';
+        indicator.textContent = '갱신 중...';
         fetch('/refresh', { signal: AbortSignal.timeout(5000) })
           .then(function() {
-            indicator.textContent = 'Done';
+            indicator.textContent = '완료';
             setTimeout(function() {
               window.location.reload();
             }, 300);
@@ -1637,6 +1915,7 @@ if ('serviceWorker' in navigator) {
 </html>"""
 
     index_html = INDEX_TEMPLATE.replace('%%SESSION_COUNT%%', str(len(sessions))).replace('%%TBODY%%', tbody_content)
+    index_html = localize_html(index_html)
 
     with open(os.path.join(OUTPUT_DIR, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(index_html)
@@ -1650,7 +1929,7 @@ def build_search_index(sessions):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Search - Claude Code Sessions</title>
+<title>대화 검색 - Claude Code</title>
 <style>
   :root {
     --bg: #faf9f5;
@@ -1725,10 +2004,10 @@ def build_search_index(sessions):
 </style>
 </head>
 <body>
-<h1>Search Sessions</h1>
-<div class="nav"><a href="index.html">&larr; All sessions</a></div>
-<input type="text" class="search-box" id="searchInput" placeholder="Enter search query (min 2 chars)..." autofocus>
-<div class="status" id="status">Enter a search query (2+ characters)</div>
+<h1>대화 검색</h1>
+<div class="nav"><a href="index.html">&larr; 전체 목록</a></div>
+<input type="text" class="search-box" id="searchInput" placeholder="검색어를 입력하세요 (2자 이상)..." autofocus>
+<div class="status" id="status">검색어를 입력하세요 (2자 이상)</div>
 <div id="results"></div>
 <script>
 function escapeHtml(s) {
@@ -1737,16 +2016,16 @@ function escapeHtml(s) {
 function timeAgo(date) {
   var now = new Date();
   var seconds = Math.floor((now - date) / 1000);
-  if (seconds < 0) return 'just now';
-  if (seconds < 60) return seconds + 's ago';
+  if (seconds < 0) return '방금 전';
+  if (seconds < 60) return seconds + '초 전';
   var minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return minutes + 'm ago';
+  if (minutes < 60) return minutes + '분 전';
   var hours = Math.floor(minutes / 60);
-  if (hours < 24) return hours + 'h ago';
+  if (hours < 24) return hours + '시간 전';
   var days = Math.floor(hours / 24);
-  if (days < 30) return days + 'd ago';
+  if (days < 30) return days + '일 전';
   var months = Math.floor(days / 30);
-  return months + 'mo ago';
+  return months + '개월 전';
 }
 var debounceTimer;
 document.getElementById('searchInput').addEventListener('input', function() {
@@ -1757,7 +2036,7 @@ document.getElementById('searchInput').addEventListener('input', function() {
     document.getElementById('status').textContent = 'Enter a search query (2+ characters)';
     return;
   }
-  document.getElementById('status').textContent = 'Searching...';
+  document.getElementById('status').textContent = '검색 중...';
   debounceTimer = setTimeout(function() { doSearch(q); }, 300);
 });
 function doSearch(query) {
@@ -1765,8 +2044,8 @@ function doSearch(query) {
     .then(function(r) { return r.json(); })
     .then(function(matches) {
       var total = matches.reduce(function(a, b) { return a + b.count; }, 0);
-      document.getElementById('status').textContent = total + ' matches in ' + matches.length + ' sessions';
-      var html = '<table><thead><tr><th>Session</th><th>Start</th><th>End</th><th>Duration</th><th>Messages</th><th>Matches</th></tr></thead><tbody>';
+      document.getElementById('status').textContent = matches.length + '개 세션에서 ' + total + '건 발견';
+      var html = '<table><thead><tr><th>대화</th><th>시작</th><th>종료</th><th>지속</th><th>메시지</th><th>매칭</th></tr></thead><tbody>';
       matches.forEach(function(m) {
         var endIso = m.end_date ? m.end_date.replace(' ', 'T') + ':00+09:00' : '';
         var ago = endIso ? timeAgo(new Date(endIso)) : '';
@@ -1787,7 +2066,7 @@ function doSearch(query) {
       document.getElementById('results').innerHTML = html;
     })
     .catch(function() {
-      document.getElementById('status').textContent = 'Search failed - cannot connect to server';
+      document.getElementById('status').textContent = '검색 실패 - 서버에 연결할 수 없습니다';
     });
 }
 (function() {
@@ -1802,6 +2081,7 @@ function doSearch(query) {
 </body>
 </html>"""
 
+    search_html = localize_html(search_html)
     with open(os.path.join(OUTPUT_DIR, 'search.html'), 'w', encoding='utf-8') as f:
         f.write(search_html)
 

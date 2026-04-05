@@ -1,5 +1,6 @@
 {
   "port": 18080,
+  "lang": "ko",
   "claude_path": "~/.local/bin/claude",
   "machine_role": "auto",
   "proxy_target_ip": "",

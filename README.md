@@ -1,105 +1,108 @@
 # Claude Code Session Dashboard
 
-A web-based dashboard for browsing, searching, and managing your [Claude Code](https://claude.ai/code) conversation sessions.
+[English](README.en.md)
 
-Claude Code stores all conversation logs as JSONL files, but there's no built-in way to browse them in a readable format. This tool converts those logs into a clean, searchable web dashboard.
+[Claude Code](https://claude.ai/code) 대화 세션을 웹 대시보드로 열람, 검색, 관리하는 도구입니다.
 
-## Why I built this
+Claude Code는 모든 대화 기록을 JSONL 파일로 저장하지만, 이걸 사람이 읽기 좋은 형태로 볼 수 있는 방법은 내장되어 있지 않습니다. 이 도구는 JSONL 로그를 깔끔한 웹 대시보드로 변환해줍니다.
 
-I use Claude Code extensively for my daily work. After accumulating hundreds of sessions, I needed a way to:
+## 왜 만들었나
 
-- **Find past conversations** — "What was that session where I set up the monitoring script?"
-- **Browse sessions from my phone** — Review conversations on the go, without opening a terminal
-- **Manage active sessions** — Start, stop, and resume sessions from a web UI
-- **Get readable conversation logs** — JSONL files are not fun to read
+Claude Code를 업무에 매일 쓰다 보니 세션이 수백 개 쌓였는데, 이런 것들이 필요했습니다:
 
-## What it does
+- **과거 대화 찾기** — "모니터링 스크립트 만든 세션이 어디 있더라?"
+- **폰에서 세션 보기** — 터미널 없이도 외출 중에 대화 기록 확인
+- **세션 원격 제어** — 웹 UI에서 세션 시작/중지/재개
+- **읽기 좋은 대화 기록** — JSONL 파일을 직접 읽는 건 고역
 
-| Feature | Description |
-|---------|-------------|
-| **JSONL to HTML conversion** | Converts Claude Code session logs into nicely formatted, markdown-rendered HTML pages |
-| **Session dashboard** | Lists all sessions with titles, timestamps, duration, and message counts |
-| **Full-text search** | Server-side search across all your conversation history |
-| **Auto-summarization** | Generates session titles using Claude Haiku API (optional, requires API key) |
-| **Session control** | Start, stop, and resume sessions from the web UI (macOS only) |
-| **Dark mode** | Automatic light/dark theme based on system preference |
-| **Mobile-friendly** | Responsive layout with pull-to-refresh for home screen web apps |
-| **Export** | Download any session as a self-contained HTML file |
-| **Hide sessions** | Hide sessions you don't want cluttering the list |
+## 주요 기능
 
-## How is this different?
+| 기능 | 설명 |
+|------|------|
+| **JSONL → HTML 변환** | Claude Code 세션 로그를 마크다운 렌더링된 HTML 페이지로 변환 |
+| **세션 대시보드** | 제목, 시간, 소요시간, 메시지 수와 함께 전체 세션 목록 표시 |
+| **전문 검색** | 서버사이드에서 전체 대화 기록을 검색 |
+| **자동 요약** | Claude Haiku API로 세션 제목 자동 생성 (선택, API 키 필요) |
+| **세션 제어** | 웹 UI에서 세션 시작/중지/재개 (macOS만 지원) |
+| **다크 모드** | 시스템 설정에 따라 자동 전환 |
+| **모바일 대응** | 반응형 레이아웃 + 당겨서 새로고침 (홈 화면 웹앱) |
+| **내보내기** | 세션을 독립 실행 가능한 HTML 파일로 다운로드 |
+| **세션 숨기기** | 목록에서 보고 싶지 않은 세션 숨김 처리 |
 
-There are several great Claude Code log viewers out there ([clear-code](https://github.com/chatgptprojects/clear-code), [sniffly](https://github.com/chiphuyen/sniffly), [cclogviewer](https://github.com/Brads3290/cclogviewer), etc.). This project focuses on a different use case:
+## 다른 프로젝트와 뭐가 다른가?
 
-| | Most viewers | This project |
+Claude Code 로그 뷰어는 이미 여러 좋은 프로젝트가 있습니다 ([clear-code](https://github.com/chatgptprojects/clear-code), [sniffly](https://github.com/chiphuyen/sniffly), [cclogviewer](https://github.com/Brads3290/cclogviewer) 등). 이 프로젝트는 다른 유스케이스에 초점을 맞추고 있습니다:
+
+| | 대부분의 뷰어 | 이 프로젝트 |
 |---|---|---|
-| **Access** | Desktop only | Phone, tablet, any browser (via local server) |
-| **Session control** | Read-only | Start, stop, resume sessions from the web UI |
-| **Search** | Client-side or none | Server-side full-text search across all JSONL files |
-| **Titles** | Filename or first message | AI-generated summaries via Claude Haiku |
-| **Multi-device** | Single machine | Primary + proxy architecture for VPN setups |
-| **Dependencies** | Node.js, Go, or npm install | Python 3 stdlib only — zero dependencies |
+| **접근성** | 데스크탑에서만 | 폰, 태블릿, 어떤 브라우저든 (로컬 서버 경유) |
+| **세션 제어** | 읽기 전용 | 웹 UI에서 시작/중지/재개 |
+| **검색** | 클라이언트사이드 또는 없음 | 서버사이드 JSONL 전문 검색 |
+| **제목** | 파일명 또는 첫 메시지 | Claude Haiku로 AI 자동 요약 |
+| **멀티 기기** | 단일 머신 | 메인 서버 + 프록시 구조 (VPN 연동) |
+| **의존성** | Node.js, Go, npm install 등 | Python 3 표준 라이브러리만 — 의존성 제로 |
 
-If you just need a quick log viewer, [cclogviewer](https://github.com/Brads3290/cclogviewer) or [clear-code](https://github.com/chatgptprojects/clear-code) are excellent choices. This project is for when you want a **persistent, phone-accessible dashboard** that also lets you **control sessions remotely**.
+단순히 로그만 보고 싶다면 [cclogviewer](https://github.com/Brads3290/cclogviewer)나 [clear-code](https://github.com/chatgptprojects/clear-code)가 좋은 선택입니다. 이 프로젝트는 **폰에서도 접근 가능한 상시 대시보드**가 필요하고, **세션을 원격으로 제어**하고 싶은 경우에 적합합니다.
 
-## Screenshots
+## 스크린샷
 
-After running the dashboard, you'll see:
+대시보드를 실행하면 다음과 같은 화면을 볼 수 있습니다:
 
-- **Dashboard** — A table listing all your sessions, sorted by recency
-- **Session detail** — Full conversation with markdown rendering, syntax highlighting, and tool use details
-- **Search** — Real-time search with highlighted snippets
+- **대시보드** — 최신순으로 정렬된 전체 세션 테이블
+- **세션 상세** — 마크다운 렌더링, 구문 강조, 도구 사용 내역이 포함된 전체 대화
+- **검색** — 하이라이트된 스니펫과 함께 실시간 검색
 
-## Quick Start
+## 빠른 시작
 
-### Requirements
+### 필요 사항
 
-- **Python 3.8+** (no pip packages needed — stdlib only)
-- **Claude Code** installed and used (so you have session logs)
-- **macOS** (for session control features; the viewer works on any OS)
+- **Python 3.8 이상** (pip 패키지 불필요 — 표준 라이브러리만 사용)
+- **Claude Code**가 설치되어 있고 사용한 적이 있어야 합니다 (세션 로그 파일 필요)
+- **macOS** (세션 제어 기능. 뷰어와 검색은 모든 OS에서 동작)
 
-### 1. Clone and set up
+### 1. 클론
 
 ```bash
 git clone https://github.com/sidoyu/claude-session-dashboard.git
 cd claude-session-dashboard
 ```
 
-### 2. Convert your sessions to HTML
+### 2. 세션을 HTML로 변환
 
 ```bash
 python3 convert_session.py
 ```
 
-This will:
-- Auto-detect your Claude Code session directory (`~/.claude/projects/`)
-- Convert all JSONL session logs to HTML files
-- Generate an `index.html` dashboard and `search.html` page
+이 명령은:
+- Claude Code 세션 디렉토리(`~/.claude/projects/`)를 자동 감지합니다
+- 모든 JSONL 세션 로그를 HTML 파일로 변환합니다
+- `index.html` 대시보드와 `search.html` 검색 페이지를 생성합니다
 
-### 3. Start the server
+### 3. 서버 시작
 
 ```bash
 python3 active_server.py
 ```
 
-Open `http://localhost:18080` in your browser.
+브라우저에서 `http://localhost:18080`을 열면 됩니다.
 
-That's it! You now have a browsable dashboard of all your Claude Code sessions.
+끝! 이제 모든 Claude Code 세션을 웹에서 둘러볼 수 있습니다.
 
-## Configuration
+## 설정
 
-### Environment variables
+### 환경 변수
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ANTHROPIC_API_KEY` | Anthropic API key for auto-summarization (optional) | _(none — sessions use first message as title)_ |
-| `CLAUDE_DASHBOARD_TZ` | Timezone offset in hours from UTC (e.g., `9` for KST, `-5` for EST) | `9` |
-| `CLAUDE_PROJECTS_DIR` | Override Claude Code projects directory | _(auto-detected)_ |
-| `CLAUDE_DASHBOARD_DIR` | Override output directory for generated HTML | _(same as script directory)_ |
+| 변수 | 설명 | 기본값 |
+|------|------|--------|
+| `ANTHROPIC_API_KEY` | 자동 요약을 위한 Anthropic API 키 (선택) | _(없음 — 첫 메시지를 제목으로 사용)_ |
+| `CLAUDE_DASHBOARD_LANG` | UI 언어 (`ko` 또는 `en`) | `ko` |
+| `CLAUDE_DASHBOARD_TZ` | UTC 기준 시간대 오프셋 (예: KST는 `9`, EST는 `-5`) | `9` (KST) |
+| `CLAUDE_PROJECTS_DIR` | Claude Code 프로젝트 디렉토리 경로 지정 | _(자동 감지)_ |
+| `CLAUDE_DASHBOARD_DIR` | 생성된 HTML 출력 디렉토리 | _(스크립트와 같은 디렉토리)_ |
 
-### config.json (optional)
+### config.json (선택)
 
-Copy the example config and edit as needed:
+예시 설정 파일을 복사해서 수정하세요:
 
 ```bash
 cp config.example.json config.json
@@ -108,6 +111,7 @@ cp config.example.json config.json
 ```json
 {
   "port": 18080,
+  "lang": "ko",
   "claude_path": "~/.local/bin/claude",
   "machine_role": "auto",
   "proxy_target_ip": "",
@@ -115,45 +119,46 @@ cp config.example.json config.json
 }
 ```
 
-| Field | Description | Default |
-|-------|-------------|---------|
-| `port` | Server port | `18080` |
-| `claude_path` | Path to `claude` CLI binary | `~/.local/bin/claude` |
-| `machine_role` | `"auto"`, `"primary"`, or `"proxy"` | `"auto"` |
-| `proxy_target_ip` | IP of the primary server (only for multi-machine setup) | `""` |
+| 필드 | 설명 | 기본값 |
+|------|------|--------|
+| `port` | 서버 포트 | `18080` |
+| `lang` | UI 언어 (`"ko"` 또는 `"en"`) | `"ko"` |
+| `claude_path` | `claude` CLI 바이너리 경로 | `~/.local/bin/claude` |
+| `machine_role` | `"auto"`, `"primary"`, `"proxy"` 중 선택 | `"auto"` |
+| `proxy_target_ip` | 메인 서버의 IP (멀티 머신 구성 시에만 사용) | `""` |
 
-> **Note:** `config.json` is in `.gitignore` — your personal settings won't be committed.
+> **참고:** `config.json`은 `.gitignore`에 포함되어 있어서 개인 설정이 커밋되지 않습니다.
 
-### Auto-summarization (optional)
+### 자동 요약 (선택)
 
-If you set `ANTHROPIC_API_KEY`, the converter will call Claude Haiku to generate short titles for each session (e.g., "Set up Naver cafe monitoring"). Without it, sessions are titled with the first user message.
+`ANTHROPIC_API_KEY`를 설정하면 Claude Haiku로 세션별 한 줄 제목을 자동 생성합니다 (예: "네이버 카페 모니터링 자동화 구현"). 설정하지 않으면 첫 사용자 메시지가 제목이 됩니다.
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 python3 convert_session.py
 ```
 
-## Usage
+## 사용법
 
-### Convert sessions
+### 세션 변환
 
 ```bash
-# Convert all (incremental — only changed sessions)
+# 전체 변환 (증분 처리 — 변경된 세션만)
 python3 convert_session.py
 
-# Force reconvert everything (e.g., after template changes)
+# 전체 강제 재변환 (템플릿 수정 후 등)
 python3 convert_session.py --force
 
-# Convert a specific session
+# 특정 세션만 변환
 python3 convert_session.py <session-id>
 
-# Rename a session
-python3 convert_session.py --rename <session-id> "New title"
+# 세션 제목 변경
+python3 convert_session.py --rename <session-id> "새 제목"
 ```
 
-### Run as a persistent service (macOS)
+### 상시 서비스로 실행 (macOS)
 
-To have the server start automatically on login, create a LaunchAgent:
+로그인 시 서버가 자동으로 시작되도록 LaunchAgent를 만듭니다:
 
 ```bash
 cat > ~/Library/LaunchAgents/com.claude.session-dashboard.plist << 'EOF'
@@ -179,17 +184,17 @@ cat > ~/Library/LaunchAgents/com.claude.session-dashboard.plist << 'EOF'
 EOF
 ```
 
-Replace `/path/to/claude-session-dashboard` with the actual path, then:
+`/path/to/claude-session-dashboard`를 실제 경로로 바꾼 후:
 
 ```bash
 launchctl load ~/Library/LaunchAgents/com.claude.session-dashboard.plist
 ```
 
-### Auto-convert on session end (Claude Code hook)
+### 세션 종료 시 자동 변환 (Claude Code hook)
 
-Add a stop hook so sessions are converted automatically when Claude finishes:
+Claude 세션이 끝날 때 자동으로 HTML을 재생성하도록 Stop hook을 추가합니다.
 
-Edit `~/.claude/settings.json`:
+`~/.claude/settings.json`을 편집하세요:
 
 ```json
 {
@@ -205,12 +210,12 @@ Edit `~/.claude/settings.json`:
 }
 ```
 
-### Multi-machine setup (advanced)
+### 멀티 머신 구성 (고급)
 
-If you run Claude Code on multiple machines connected via Tailscale or similar VPN:
+Tailscale 등 VPN으로 연결된 여러 대의 Mac에서 Claude Code를 사용하는 경우:
 
-1. **Primary machine** (where Claude Code runs): Use default config
-2. **Secondary machine**: Create `config.json` with:
+1. **메인 머신** (Claude Code를 실행하는 곳): 기본 설정 그대로 사용
+2. **보조 머신**: `config.json`에 다음과 같이 설정:
 
 ```json
 {
@@ -219,9 +224,9 @@ If you run Claude Code on multiple machines connected via Tailscale or similar V
 }
 ```
 
-The secondary machine will proxy all requests to the primary.
+보조 머신은 모든 요청을 메인 서버로 프록시합니다.
 
-## How it works
+## 동작 원리
 
 ```
 ~/.claude/projects/         convert_session.py        active_server.py
@@ -234,48 +239,48 @@ The secondary machine will proxy all requests to the primary.
                                                       └──────────────────┘
 ```
 
-1. **Claude Code** stores conversation logs as JSONL files in `~/.claude/projects/`
-2. **convert_session.py** reads those JSONL files and generates HTML pages with:
-   - Markdown rendering (via [marked.js](https://marked.js.org/) CDN)
-   - Syntax highlighting (via [highlight.js](https://highlightjs.org/) CDN)
-   - Tool use details in collapsible sections
-   - System prompt and internal tags stripped out
-3. **active_server.py** serves the HTML files and provides APIs for:
-   - Active session detection (via `ps aux`)
-   - Session start/stop (via Terminal.app AppleScript on macOS)
-   - Full-text search across JSONL files
-   - Session title management
+1. **Claude Code**가 대화 기록을 `~/.claude/projects/`에 JSONL 파일로 저장
+2. **convert_session.py**가 JSONL 파일을 읽어서 HTML 페이지를 생성:
+   - 마크다운 렌더링 ([marked.js](https://marked.js.org/) CDN)
+   - 구문 강조 ([highlight.js](https://highlightjs.org/) CDN)
+   - 도구 사용 내역을 접을 수 있는 섹션으로 표시
+   - 시스템 프롬프트 및 내부 태그 자동 제거
+3. **active_server.py**가 HTML 파일을 서빙하고 다음 API를 제공:
+   - 활성 세션 감지 (`ps aux` 기반)
+   - 세션 시작/중지 (macOS Terminal.app AppleScript)
+   - JSONL 파일 전문 검색
+   - 세션 제목 관리
 
-## Limitations
+## 한계
 
-- **Session control (start/stop/resume) is macOS-only** — it uses AppleScript to control Terminal.app. The viewer and search work on any OS.
-- **No authentication** — the server binds to `0.0.0.0` with no auth. Only run it on a trusted network or behind a VPN.
-- **CDN dependency** — session detail pages load marked.js and highlight.js from CDN for markdown rendering. The export feature strips these for offline viewing.
-- **Single-user** — designed for personal use, not shared team access.
-- **KST default timezone** — timestamps default to UTC+9 (KST). Change via `CLAUDE_DASHBOARD_TZ` environment variable.
+- **세션 제어(시작/중지/재개)는 macOS 전용** — Terminal.app을 AppleScript로 제어합니다. 뷰어와 검색은 모든 OS에서 동작합니다.
+- **인증 없음** — 서버가 `0.0.0.0`에 바인딩되며 인증이 없습니다. 신뢰할 수 있는 네트워크나 VPN 안에서만 사용하세요.
+- **CDN 의존** — 세션 상세 페이지에서 marked.js와 highlight.js를 CDN에서 로드합니다. 내보내기 기능은 오프라인 열람을 위해 CDN을 제거합니다.
+- **개인 사용 전용** — 팀 공유용이 아닌 1인 사용 도구입니다.
+- **기본 시간대 KST** — 타임스탬프가 기본적으로 UTC+9(KST)입니다. `CLAUDE_DASHBOARD_TZ` 환경 변수로 변경 가능합니다.
 
-## File structure
+## 파일 구조
 
 ```
 claude-session-dashboard/
-├── active_server.py        # HTTP server with session control APIs
-├── convert_session.py      # JSONL → HTML converter
-├── sw.js                   # Service Worker for browser caching
-├── config.example.json     # Example configuration
-├── .gitignore              # Excludes generated HTML, data files, config
+├── active_server.py        # HTTP 서버 + 세션 제어 API
+├── convert_session.py      # JSONL → HTML 변환기
+├── sw.js                   # Service Worker (브라우저 캐싱)
+├── config.example.json     # 설정 파일 예시
+├── .gitignore              # 생성 파일, 데이터, config 제외
 └── README.md
 ```
 
-Generated files (not in repo):
+자동 생성되는 파일 (repo에 포함되지 않음):
 ```
-├── index.html              # Dashboard page
-├── search.html             # Search page
-├── <session-id>.html       # Individual session pages
-├── summaries.json          # Cached session title summaries
-├── hidden_sessions.json    # Hidden session IDs
-└── config.json             # Your personal config
+├── index.html              # 대시보드 페이지
+├── search.html             # 검색 페이지
+├── <session-id>.html       # 개별 세션 페이지
+├── summaries.json          # 세션 제목 요약 캐시
+├── hidden_sessions.json    # 숨긴 세션 ID 목록
+└── config.json             # 개인 설정 파일
 ```
 
-## License
+## 라이선스
 
 MIT
