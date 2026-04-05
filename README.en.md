@@ -2,18 +2,35 @@
 
 [한국어](README.md)
 
-A web-based dashboard for browsing, searching, and managing your [Claude Code](https://claude.ai/code) conversation sessions.
+Run [Claude Code](https://claude.ai/code) on your Mac Mini (or desktop), and monitor/control sessions remotely from your phone, tablet, or laptop — anywhere.
 
-Claude Code stores all conversation logs as JSONL files, but there's no built-in way to browse them in a readable format. This tool converts those logs into a clean, searchable web dashboard.
+## Why this exists
 
-## Why I built this
+Claude Code is a terminal-based tool. You start a session on your desktop, leave the house, and then... you have no way to check on it.
 
-I use Claude Code extensively for my daily work. After accumulating hundreds of sessions, I needed a way to:
+**The problem I kept running into:**
 
-- **Find past conversations** — "What was that session where I set up the monitoring script?"
-- **Browse sessions from my phone** — Review conversations on the go, without opening a terminal
-- **Manage active sessions** — Start, stop, and resume sessions from a web UI
-- **Get readable conversation logs** — JSONL files are not fun to read
+- I'd leave a Claude Code session running on my Mac Mini and go out — no way to see progress from my phone
+- Wanted to check "how did that session turn out?" but had to wait until I got home to open a terminal
+- If a session finished, I wanted to kick off a new one remotely — no way to do that
+- Hundreds of accumulated sessions, impossible to find old conversations — can't grep through JSONL files on a phone
+
+**What this solves:**
+
+```
+┌─────────────┐                    ┌──────────────┐
+│ On the go    │   VPN / LAN       │  Home desktop │
+│ Phone/Tablet │ ──────────────────▶│  Claude Code  │
+│ Laptop       │   Web dashboard    │  running here │
+└─────────────┘                    └──────────────┘
+
+ ✓ Browse session conversations (markdown rendered)
+ ✓ Start / stop / resume sessions
+ ✓ Full-text search across all conversations
+ ✓ AI-generated session titles
+```
+
+Built for the workflow where one desktop is your Claude Code machine, and portable devices are your remote control while on the go.
 
 ## Features
 
