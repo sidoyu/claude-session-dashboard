@@ -83,33 +83,35 @@ There are several great Claude Code log viewers ([clear-code](https://github.com
 - **Claude Code** installed (session logs needed)
 - **macOS** (for session control; viewer works on any OS)
 
-### 1. Clone
+### Install (one-time)
 
 ```bash
 git clone https://github.com/sidoyu/claude-session-dashboard.git
 cd claude-session-dashboard
+./install.sh
 ```
 
-### 2. Switch to English UI
+For English UI, create `config.json` before running install:
 
 ```bash
 cp config.example.json config.json
 # Edit config.json and set "lang": "en"
+./install.sh
 ```
 
-### 3. Convert sessions
+`install.sh` automatically:
+1. Converts all Claude Code sessions to HTML
+2. Registers a Claude Code Stop hook (auto-converts on session end)
+3. Registers a LaunchAgent (server auto-starts on login, restarts on crash)
+4. Opens `http://localhost:18080` in your browser
+
+After installation, **nothing else to do.** The server is always running, and HTML is refreshed every time a Claude Code session ends.
+
+### Uninstall
 
 ```bash
-python3 convert_session.py
+./uninstall.sh
 ```
-
-### 4. Start server
-
-```bash
-python3 active_server.py
-```
-
-Open `http://localhost:18080`.
 
 ## Configuration
 
