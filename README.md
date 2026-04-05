@@ -115,15 +115,20 @@ Claude Code 로그 뷰어는 이미 여러 좋은 프로젝트가 있습니다 (
 
 Claude Code에게 이렇게 말하면 됩니다:
 
-> https://github.com/sidoyu/claude-session-dashboard 이거 클론하고 install.sh 실행해줘
+> https://github.com/sidoyu/claude-session-dashboard 이거 클론하고 `./install.sh --auto` 실행해줘
 
-또는 직접:
+직접 실행하면 API 키, trust dialog 등을 인터랙티브하게 설정할 수 있습니다:
 
 ```bash
 git clone https://github.com/sidoyu/claude-session-dashboard.git
 cd claude-session-dashboard
 ./install.sh
 ```
+
+| 모드 | 명령어 | 용도 |
+|------|--------|------|
+| **인터랙티브** | `./install.sh` | 사람이 직접 실행. API 키, trust dialog 등 하나씩 설정 |
+| **자동** | `./install.sh --auto` | Claude Code가 실행. 기본값으로 자동 진행 |
 
 `install.sh`가 자동으로 수행하는 것:
 

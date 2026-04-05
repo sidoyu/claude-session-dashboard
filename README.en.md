@@ -102,15 +102,20 @@ There are several great Claude Code log viewers ([clear-code](https://github.com
 
 Just tell Claude Code:
 
-> Clone https://github.com/sidoyu/claude-session-dashboard and run install.sh
+> Clone https://github.com/sidoyu/claude-session-dashboard and run `./install.sh --auto`
 
-Or manually:
+Or run it yourself for interactive setup (API key, trust dialog, etc.):
 
 ```bash
 git clone https://github.com/sidoyu/claude-session-dashboard.git
 cd claude-session-dashboard
 ./install.sh
 ```
+
+| Mode | Command | Use case |
+|------|---------|----------|
+| **Interactive** | `./install.sh` | Run it yourself. Configure API key, trust dialog step by step |
+| **Auto** | `./install.sh --auto` | Claude Code runs it. Uses defaults, no prompts |
 
 For English UI, create `config.json` before running install:
 
