@@ -41,6 +41,22 @@ SESSION_COUNT=$(find "$PROJECTS_BASE" -name "*.jsonl" -not -name "agent-*" 2>/de
 echo "✓ Python 3: $(python3 --version 2>&1)"
 echo "✓ Claude Code 세션: ${SESSION_COUNT}개 발견"
 echo "✓ 설치 경로: $SCRIPT_DIR"
+
+# 포트 충돌 확인
+if lsof -i :${PORT} >/dev/null 2>&1; then
+    EXISTING_PID=$(lsof -ti :${PORT} 2>/dev/null | head -1)
+    EXISTING_CMD=$(ps -p "$EXISTING_PID" -o comm= 2>/dev/null || echo "unknown")
+    echo ""
+    echo "⚠ 포트 ${PORT}이 이미 사용 중입니다 (PID: ${EXISTING_PID}, ${EXISTING_CMD})"
+    echo "  기존 대시보드 서버라면 install.sh가 자동으로 교체합니다."
+    echo "  다른 프로세스라면 config.json에서 port를 변경하세요."
+    echo ""
+    read -p "  계속 진행할까요? (y/N): " CONFIRM
+    if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+        echo "  설치를 취소합니다."
+        exit 0
+    fi
+fi
 echo ""
 
 # ─── Step 1: 세션 변환 ───
