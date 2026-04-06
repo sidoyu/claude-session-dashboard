@@ -207,6 +207,7 @@ Add a stop hook in `~/.claude/settings.json`:
 - **No authentication** — run on trusted networks or behind a VPN.
 - **CDN dependency** — markdown rendering uses CDN. Export strips CDN for offline.
 - **Single-user** — personal use, not team access.
+- **180-second timeout for new sessions** — When starting a new session from the dashboard, the server waits synchronously for the first prompt to complete, with a 180-second (3-minute) timeout. Start remote sessions with a simple greeting like `"hi"` first, then connect via the [claude.ai/code](https://claude.ai/code) web app to continue with your actual task.
 
 ## License
 
