@@ -208,6 +208,7 @@ Add a stop hook in `~/.claude/settings.json`:
 - **CDN dependency** — markdown rendering uses CDN. Export strips CDN for offline.
 - **Single-user** — personal use, not team access.
 - **180-second timeout for new sessions** — When starting a new session from the dashboard, the server waits synchronously for the first prompt to complete, with a 180-second (3-minute) timeout. Start remote sessions with a simple greeting like `"hi"` first, then connect via the [claude.ai/code](https://claude.ai/code) web app to continue with your actual task.
+- **OAuth token expiration** — Claude Code authenticates via an OAuth token issued by `/login`, which expires after a certain period. When it expires, all sessions will simultaneously show `401 authentication_error`, and you must run `/login` again directly on the desktop. Re-login cannot be done remotely, so physical access to the desktop is required.
 
 ## License
 

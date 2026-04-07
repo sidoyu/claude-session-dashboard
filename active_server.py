@@ -186,6 +186,9 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
         elif path == '/sw.js':
             self._serve_file('sw.js', 'application/javascript')
 
+        elif path == '/icon.png':
+            self._serve_file('icon.png', 'image/png')
+
         elif path == '/search_index.json':
             self._serve_file('search_index.json', 'application/json')
 
