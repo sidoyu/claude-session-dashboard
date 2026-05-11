@@ -22,6 +22,8 @@ Port: 18080 (default, configurable via config.json)
 
 import http.server
 import json
+import logging
+import logging.handlers
 import os
 import socket
 import subprocess
@@ -35,6 +37,23 @@ import urllib.request
 
 LOGS_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(LOGS_DIR, "config.json")
+
+# ─── Request log (rotating, 10MB × 5 = 50MB max) ───
+_LOG_PATH = os.path.join(LOGS_DIR, 'active_server.log')
+_logger = logging.getLogger('active_server')
+_logger.setLevel(logging.INFO)
+if not _logger.handlers:
+    try:
+        _h = logging.handlers.RotatingFileHandler(
+            _LOG_PATH, maxBytes=10 * 1024 * 1024, backupCount=5, encoding='utf-8'
+        )
+        _h.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+        _logger.addHandler(_h)
+    except Exception:
+        pass  # Logging failure must not break the server.
+
+# Polling endpoints excluded from the request log to keep it readable.
+_NOISY_PATHS = ('/active', '/hidden', '/whoami')
 
 # Default configuration
 _config = {
@@ -97,7 +116,21 @@ MACHINE_ROLE = get_machine_role()
 # ─── HTTP Handler ───
 
 class SessionHandler(http.server.BaseHTTPRequestHandler):
+    def _log_request(self, method):
+        """One-line request log; skip polling endpoints."""
+        try:
+            path = urllib.parse.urlparse(self.path).path
+            for p in _NOISY_PATHS:
+                if path == p or path.startswith(p):
+                    return
+            client = self.client_address[0] if self.client_address else '-'
+            ua = (self.headers.get('User-Agent', '-') or '-')[:160]
+            _logger.info(f'{method} {self.path} client={client} ua="{ua}"')
+        except Exception:
+            pass
+
     def do_POST(self):
+        self._log_request('POST')
         path = urllib.parse.urlparse(self.path).path
         if path == '/hidden-update':
             content_length = int(self.headers.get('Content-Length', 0))
@@ -118,6 +151,7 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_GET(self):
+        self._log_request('GET')
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
@@ -307,6 +341,15 @@ def get_active_sessions():
 
 # ─── Session Start/Create (primary only) ───
 
+# Dedupe: block duplicate /new-session calls with the same message within a short
+# window. Prevents double-tap, network retry, or iOS auto-retry from spawning
+# two sessions for one user intent. Only successful results are cached so
+# error-then-retry still works.
+_new_session_dedupe = {}  # msg -> (timestamp, result)
+_DEDUPE_WINDOW_SEC = 30
+_dedupe_lock = threading.Lock()
+
+
 def _open_terminal(sid):
     """Open Terminal.app and run claude --resume (macOS only)."""
     cmd = f"{CLAUDE_PATH} --resume {sid} --remote-control"
@@ -350,6 +393,18 @@ def start_session(sid):
 def new_session(msg='hi'):
     """Create a new session."""
     if MACHINE_ROLE == 'primary':
+        # ── Dedupe check ──
+        now = time.time()
+        with _dedupe_lock:
+            expired = [k for k, (ts, _) in _new_session_dedupe.items() if now - ts > _DEDUPE_WINDOW_SEC]
+            for k in expired:
+                _new_session_dedupe.pop(k, None)
+            cached = _new_session_dedupe.get(msg)
+            if cached:
+                age = now - cached[0]
+                _logger.info(f'new-session dedupe HIT (age={age:.1f}s) sid={cached[1].get("session","?")}')
+                return cached[1]
+
         try:
             proj_dir = PROJECTS_DIR
             before = set()
@@ -376,7 +431,10 @@ def new_session(msg='hi'):
                 return {'status': 'error', 'message': 'session ID not found'}
 
             _open_terminal(sid)
-            return {'status': 'ok', 'session': sid}
+            result = {'status': 'ok', 'session': sid}
+            with _dedupe_lock:
+                _new_session_dedupe[msg] = (time.time(), result)
+            return result
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
     else:

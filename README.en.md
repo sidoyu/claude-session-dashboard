@@ -76,6 +76,10 @@ When you want to work with Claude Code on your desktop while away:
 | **Mobile-friendly** | Responsive layout with pull-to-refresh |
 | **Export** | Download any session as a self-contained HTML file |
 | **i18n** | Korean (default) and English UI |
+| **Request log** | All requests logged to `active_server.log` (10MB × 5 rotation, polling endpoints excluded) — useful for incident triage |
+| **New-session dedupe** | Same message within 30s reuses the first result — prevents duplicate sessions from double-tap or iOS auto-retry |
+| **Auto PWA cache busting** | `convert_session.py` updates `sw.js` `CACHE_NAME` on every code change → users get the new version on next visit, no manual version bump |
+| **Backup script** | `backup.sh` — weekly compressed snapshot with retention policy (registerable as a cron job) |
 
 ## How is this different?
 
@@ -169,6 +173,38 @@ After installation, **nothing else to do.** The server is always running, and HT
 | `CLAUDE_DASHBOARD_LANG` | UI language override | `ko` |
 | `CLAUDE_DASHBOARD_TZ` | Timezone offset from UTC | `9` (KST) |
 | `CLAUDE_PROJECTS_DIR` | Override projects directory | _(auto-detected)_ |
+
+### Multi-machine setup (advanced)
+
+For multiple Macs connected via Tailscale or another VPN:
+
+1. **Primary machine** (where Claude Code runs): use the default config.
+2. **Secondary machine**: set in `config.json`:
+
+```json
+{
+  "machine_role": "proxy",
+  "proxy_target_ip": "100.x.x.x"
+}
+```
+
+The secondary machine then forwards all requests to the primary.
+
+> Note: a proxy machine is essentially "secondary browser → primary IP" automated. You can also just open `http://100.x.x.x:18080/` directly from the secondary machine's browser and skip the proxy entirely. Use the proxy only when you want LaunchAgent auto-start, a `localhost` bookmark, or other local conveniences.
+
+### HTTPS
+
+This server is intentionally HTTP. Tailscale provides end-to-end WireGuard encryption, and the IPs are mesh-private (unreachable from the public internet), so adding TLS provides little extra value. If you need a real certificate, use `tailscale cert` + Let's Encrypt.
+
+### Backups
+
+Register `backup.sh` in cron for weekly snapshots:
+
+```cron
+0 3 * * 0  /path/to/dashboard/backup.sh
+```
+
+Default destination: `~/Backups/claude-dashboard/` with 8-week retention. Override via `BACKUP_DEST` and `RETENTION` environment variables.
 
 ### Auto-convert on session end
 

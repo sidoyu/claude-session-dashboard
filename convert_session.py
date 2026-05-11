@@ -2237,6 +2237,39 @@ def main():
     else:
         print("No sessions to convert.")
 
+    # Auto-invalidate the Service Worker cache whenever this script or sw.js
+    # changes, so PWA users pick up the new version on next visit.
+    update_sw_cache_name()
+
+
+def update_sw_cache_name():
+    """Update sw.js CACHE_NAME to a hash of (this script + sw.js sans CACHE_NAME).
+
+    Any code change to convert_session.py or sw.js produces a new cache name,
+    forcing the Service Worker to refresh. No more manual version bumps.
+    """
+    import hashlib
+    sw_path = os.path.join(OUTPUT_DIR, 'sw.js')
+    if not os.path.isfile(sw_path):
+        return
+    with open(sw_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    sw_no_ver = re.sub(r"const CACHE_NAME\s*=\s*'[^']*';", '', content)
+    try:
+        src_bytes = open(__file__, 'rb').read()
+    except Exception:
+        src_bytes = b''
+    h = hashlib.sha1(src_bytes + sw_no_ver.encode('utf-8')).hexdigest()[:10]
+    new_content = re.sub(
+        r"const CACHE_NAME\s*=\s*'[^']*';",
+        f"const CACHE_NAME = 'claude-dashboard-{h}';",
+        content
+    )
+    if new_content != content:
+        with open(sw_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        print(f"sw.js CACHE_NAME -> claude-dashboard-{h}")
+
 
 if __name__ == '__main__':
     main()
