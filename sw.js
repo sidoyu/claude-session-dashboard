@@ -1,9 +1,9 @@
-const CACHE_NAME = 'claude-dashboard-v2';
+const CACHE_NAME = 'claude-dashboard-2b4b633245';
 
 self.addEventListener('fetch', function(event) {
   const url = new URL(event.request.url);
 
-  // Don't cache API requests
+  // API 요청은 캐시하지 않음
   if (url.pathname.startsWith('/active') ||
       url.pathname.startsWith('/start/') ||
       url.pathname.startsWith('/stop/') ||
@@ -16,7 +16,7 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // HTML pages: cache-first, update in background
+  // HTML 페이지: 캐시 우선, 백그라운드에서 업데이트
   event.respondWith(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.match(event.request).then(function(cached) {
@@ -35,7 +35,7 @@ self.addEventListener('fetch', function(event) {
   );
 });
 
-// Clean up old caches on activation
+// 새 SW 활성화 시 이전 캐시 삭제
 self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(names) {

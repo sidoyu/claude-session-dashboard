@@ -64,7 +64,9 @@ Claude Code는 터미널 기반 도구입니다. 데스크탑에서 세션을 �
 | **요청 로그** | `active_server.log`에 모든 요청 기록 (10MB × 5 회전, 폴링 endpoint 제외) — 사고 진단에 유용 |
 | **세션 생성 중복 차단** | 같은 메시지로 30초 내 두 번 들어오면 첫 결과 재사용 — 더블탭/iOS 자동 재시도로 인한 중복 세션 방지 |
 | **PWA 캐시 자동 무효화** | `convert_session.py`가 코드 수정 시 `sw.js`의 `CACHE_NAME`을 자동 갱신 → 사용자는 다음 진입 시 새 버전 자동 수령 |
-| **백업 스크립트** | `backup.sh` — 주간 자동 압축 + 보존 정책 (cron으로 등록) |
+| **이미지 첨부 외부 분리** | JSONL에 base64로 박힌 사용자 첨부 이미지를 `img/<sid>/<sha1>.<ext>` 외부 파일로 떼고, HTML엔 `<img loading="lazy">` 참조만 박음 → 세션 페이지 크기 ↓, viewport 진입 시에만 fetch |
+| **일관성 있는 알림 UI** | `notify.js`로 토스트·모달·확인 다이얼로그 통일 (`notify.toast`/`notify.modal`/`notify.confirm`). iOS PWA safe-area 대응 |
+| **백업 스크립트** | `backup.sh` — 주간 자동 압축 + 보존 정책 (cron으로 등록). `img/` 폴더는 derived 자산이라 백업 제외, 크기 임계 초과 시 옵션 Slack 알림 |
 
 ## 다른 프로젝트와 뭐가 다른가?
 
@@ -257,6 +259,8 @@ Tailscale 등 VPN으로 연결된 여러 대의 Mac에서 Claude Code를 사용�
 ```
 
 기본 저장 위치: `~/Backups/claude-dashboard/` (8주 보존). `BACKUP_DEST`·`RETENTION` 환경변수로 변경 가능.
+
+`img/` 폴더는 JSONL에서 재생성 가능한 derived 자산이라 백업에서 제외됩니다 (복구 시 `convert_session.py --force`). 추가로 `SLACK_WEBHOOK_URL`을 지정하면 `img/` 크기가 1 GiB(기본값, `IMG_ALERT_BYTES`로 override)를 넘을 때 한 줄 알림이 갑니다.
 
 ## 동작 원리
 

@@ -79,7 +79,9 @@ When you want to work with Claude Code on your desktop while away:
 | **Request log** | All requests logged to `active_server.log` (10MB × 5 rotation, polling endpoints excluded) — useful for incident triage |
 | **New-session dedupe** | Same message within 30s reuses the first result — prevents duplicate sessions from double-tap or iOS auto-retry |
 | **Auto PWA cache busting** | `convert_session.py` updates `sw.js` `CACHE_NAME` on every code change → users get the new version on next visit, no manual version bump |
-| **Backup script** | `backup.sh` — weekly compressed snapshot with retention policy (registerable as a cron job) |
+| **External image attachments** | base64 images embedded in JSONL are extracted to `img/<sid>/<sha1>.<ext>` and referenced via `<img loading="lazy">` → smaller session HTML, fetched only on viewport entry |
+| **Consistent notification UI** | `notify.js` unifies toasts, modals, and confirms (`notify.toast`/`notify.modal`/`notify.confirm`) with iOS PWA safe-area support |
+| **Backup script** | `backup.sh` — weekly compressed snapshot with retention policy (registerable as a cron job). The `img/` folder is excluded as derived data; optional Slack alert when its size exceeds the threshold |
 
 ## How is this different?
 
@@ -205,6 +207,8 @@ Register `backup.sh` in cron for weekly snapshots:
 ```
 
 Default destination: `~/Backups/claude-dashboard/` with 8-week retention. Override via `BACKUP_DEST` and `RETENTION` environment variables.
+
+The `img/` folder is excluded from backups because it is a derived asset that can be regenerated from JSONL (run `convert_session.py --force` to rebuild). Optionally, set `SLACK_WEBHOOK_URL` to receive a one-line alert when `img/` exceeds 1 GiB (override via `IMG_ALERT_BYTES`).
 
 ### Auto-convert on session end
 
