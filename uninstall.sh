@@ -23,10 +23,23 @@ else
     echo "  LaunchAgent 없음 (건너뜀)"
 fi
 
-# ─── 2. Stop Hook 제거 ───
+# ─── 2. cron sweep 제거 ───
+
+CRON_LINE="* * * * * ${SCRIPT_DIR}/cron-sweep.sh"
+CRON_TAG="# claude-session-dashboard cron sweep"
+CURRENT_CRON="$(crontab -l 2>/dev/null || true)"
+
+if echo "$CURRENT_CRON" | grep -Fq "$CRON_LINE"; then
+    echo "  cron entry 제거 중..."
+    echo "$CURRENT_CRON" | grep -Fv "$CRON_LINE" | grep -Fv "$CRON_TAG" | crontab -
+    echo "  ✓ cron sweep 제거됨"
+else
+    echo "  cron entry 없음 (건너뜀)"
+fi
+
+# ─── 2b. 구버전 Stop Hook 제거 (마이그레이션 호환) ───
 
 if [ -f "$SETTINGS_FILE" ]; then
-    echo "  Stop hook 제거 중..."
     HOOK_COMMAND="python3 ${SCRIPT_DIR}/convert_session.py"
 
     python3 << PYEOF
@@ -41,7 +54,6 @@ with open(settings_path, 'r', encoding='utf-8') as f:
 stop_hooks = settings.get('hooks', {}).get('Stop', [])
 original_count = len(stop_hooks)
 
-# 해당 hook 제거
 new_hooks = []
 for entry in stop_hooks:
     if isinstance(entry, dict) and 'hooks' in entry:
@@ -58,12 +70,8 @@ if len(new_hooks) != original_count:
     settings['hooks']['Stop'] = new_hooks
     with open(settings_path, 'w', encoding='utf-8') as f:
         json.dump(settings, f, indent=2, ensure_ascii=False)
-    print("  ✓ Stop hook 제거됨")
-else:
-    print("  Stop hook 없음 (건너뜀)")
+    print("  ✓ 구버전 Stop hook 제거됨")
 PYEOF
-else
-    echo "  settings.json 없음 (건너뜀)"
 fi
 
 # ─── 3. 생성된 파일 정리 ───
@@ -75,6 +83,7 @@ rm -f "$SCRIPT_DIR"/hidden_sessions.json
 rm -f "$SCRIPT_DIR"/search_index.json
 rm -f "$SCRIPT_DIR"/server.log
 rm -f "$SCRIPT_DIR"/config.json
+rm -f "$SCRIPT_DIR"/cron.log
 echo "  ✓ 생성 파일 정리됨"
 
 echo ""

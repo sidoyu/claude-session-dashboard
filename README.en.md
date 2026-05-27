@@ -133,11 +133,13 @@ cp config.example.json config.json
 
 `install.sh` automatically:
 1. Converts all Claude Code sessions to HTML
-2. Registers a Claude Code Stop hook (auto-converts on session end)
+2. Registers a 1-minute cron sweep (only changed sessions are reconverted)
 3. Registers a LaunchAgent (server auto-starts on login, restarts on crash)
 4. Opens `http://localhost:18080` in your browser
 
-After installation, **nothing else to do.** The server is always running, and HTML is refreshed every time a Claude Code session ends.
+After installation, **nothing else to do.** The server is always running, and HTML refreshes within one minute of a new session.
+
+> **Why cron sweep?** The previous version used Claude Code's `Stop` hook for immediate conversion, but the hook can fire before the JSONL's final line is flushed to disk — causing the session-ending message to be missing from the HTML. cron sweep + `data-jsonl-size` comparison only reconverts changed sessions and avoids the race entirely. `install.sh` removes any legacy Stop hook automatically.
 
 ### Uninstall
 
@@ -210,23 +212,16 @@ Default destination: `~/Backups/claude-dashboard/` with 8-week retention. Overri
 
 The `img/` folder is excluded from backups because it is a derived asset that can be regenerated from JSONL (run `convert_session.py --force` to rebuild). Optionally, set `SLACK_WEBHOOK_URL` to receive a one-line alert when `img/` exceeds 1 GiB (override via `IMG_ALERT_BYTES`).
 
-### Auto-convert on session end
+### Auto-convert on a schedule
 
-Add a stop hook in `~/.claude/settings.json`:
+`install.sh` registers a 1-minute cron sweep. To set it up manually:
 
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "type": "command",
-        "command": "python3 /path/to/claude-session-dashboard/convert_session.py",
-        "timeout": 30
-      }
-    ]
-  }
-}
+```bash
+# crontab -e
+* * * * * /path/to/claude-session-dashboard/cron-sweep.sh
 ```
+
+Optionally export `HEALTHCHECKS_URL` to receive dead-man's-switch alerts when the sweep stops running.
 
 ## How it works
 

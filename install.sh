@@ -289,62 +289,67 @@ if ! python3 "$SCRIPT_DIR/convert_session.py" --force; then
 fi
 echo ""
 
-# ─── Step 3: Stop Hook 등록 ───
+# ─── Step 3: cron sweep 등록 ───
+#
+# Stop hook 대신 1분 cron sweep으로 변환 트리거.
+# 이유: Stop hook이 JSONL 마지막 라인 flush 전에 발화하는 race condition이 있어
+# 종결 메시지가 HTML에서 누락되는 사고 발생. cron sweep + data-jsonl-size 비교로
+# 변경분만 변환하여 race를 근본 회피한다.
 
-echo "── Step 3/5: Claude Code Stop hook 등록..."
+echo "── Step 3/5: cron sweep 등록 (1분 주기)..."
 
-HOOK_COMMAND="python3 ${SCRIPT_DIR}/convert_session.py"
+CRON_LINE="* * * * * ${SCRIPT_DIR}/cron-sweep.sh"
+CRON_TAG="# claude-session-dashboard cron sweep"
 
-# settings.json이 없으면 생성
-if [ ! -f "$SETTINGS_FILE" ]; then
-    mkdir -p "$(dirname "$SETTINGS_FILE")"
-    echo '{}' > "$SETTINGS_FILE"
-fi
-
-# Python으로 안전하게 JSON 병합
-python3 << PYEOF
-import json, sys
-
+# 기존 Stop hook이 등록되어 있으면 정리 (구버전에서 마이그레이션)
+LEGACY_HOOK_COMMAND="python3 ${SCRIPT_DIR}/convert_session.py"
+if [ -f "$SETTINGS_FILE" ]; then
+    python3 << PYEOF
+import json
 settings_path = "$SETTINGS_FILE"
-hook_command = "$HOOK_COMMAND"
-
+legacy = "$LEGACY_HOOK_COMMAND"
 try:
     with open(settings_path, 'r', encoding='utf-8') as f:
         settings = json.load(f)
-except (json.JSONDecodeError, FileNotFoundError):
+except Exception:
     settings = {}
-
-# hooks.Stop 배열 가져오기 (없으면 생성)
-hooks = settings.setdefault('hooks', {})
-stop_hooks = hooks.setdefault('Stop', [])
-
-# 이미 등록되어 있는지 확인
-already_exists = False
+stop_hooks = settings.get('hooks', {}).get('Stop', [])
+new_hooks = []
+removed = False
 for entry in stop_hooks:
     if isinstance(entry, dict) and 'hooks' in entry:
-        for h in entry['hooks']:
-            if h.get('command', '') == hook_command:
-                already_exists = True
-                break
-    elif isinstance(entry, dict) and entry.get('command', '') == hook_command:
-        already_exists = True
-    if already_exists:
-        break
-
-if already_exists:
-    print("  이미 등록되어 있습니다. 건너뜁니다.")
-else:
-    if stop_hooks and isinstance(stop_hooks[0], dict) and 'hooks' in stop_hooks[0]:
-        new_entry = {"hooks": [{"type": "command", "command": hook_command, "timeout": 30}]}
+        filtered = [h for h in entry['hooks'] if h.get('command', '') != legacy]
+        if len(filtered) != len(entry['hooks']):
+            removed = True
+        if filtered:
+            entry['hooks'] = filtered
+            new_hooks.append(entry)
+    elif isinstance(entry, dict) and entry.get('command', '') == legacy:
+        removed = True
+        continue
     else:
-        new_entry = {"type": "command", "command": hook_command, "timeout": 30}
-
-    stop_hooks.insert(0, new_entry)
-
+        new_hooks.append(entry)
+if removed:
+    settings.setdefault('hooks', {})['Stop'] = new_hooks
     with open(settings_path, 'w', encoding='utf-8') as f:
         json.dump(settings, f, indent=2, ensure_ascii=False)
-    print("  ✓ Stop hook 등록 완료")
+    print("  ✓ 구버전 Stop hook 제거 (cron sweep으로 대체)")
 PYEOF
+fi
+
+# 현재 crontab 가져와서 중복 검사 후 append
+CURRENT_CRON="$(crontab -l 2>/dev/null || true)"
+if echo "$CURRENT_CRON" | grep -Fq "$CRON_LINE"; then
+    echo "  cron entry가 이미 등록되어 있습니다. 건너뜁니다."
+else
+    {
+        echo "$CURRENT_CRON"
+        echo ""
+        echo "$CRON_TAG"
+        echo "$CRON_LINE"
+    } | crontab -
+    echo "  ✓ cron sweep 등록 완료 (1분 주기)"
+fi
 echo ""
 
 # ─── Step 4: LaunchAgent 등록 ───

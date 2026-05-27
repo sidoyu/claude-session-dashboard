@@ -139,11 +139,13 @@ cd claude-session-dashboard
 `install.sh`가 자동으로 수행하는 것:
 
 1. 모든 Claude Code 세션을 HTML로 변환
-2. Claude Code Stop hook 등록 (세션 종료 시 자동 변환)
+2. 1분 주기 cron sweep 등록 (변경된 세션만 자동 변환)
 3. LaunchAgent 등록 (서버가 로그인 시 자동 시작, 크래시 시 재시작)
 4. 브라우저에서 `http://localhost:18080` 열기
 
-설치가 끝나면 **이후로는 아무것도 할 필요 없습니다.** 서버가 항상 떠 있고, Claude Code 세션이 끝날 때마다 HTML이 자동으로 갱신됩니다.
+설치가 끝나면 **이후로는 아무것도 할 필요 없습니다.** 서버가 항상 떠 있고, 1분 안에 새 세션이 HTML로 갱신됩니다.
+
+> **왜 cron sweep인가?** 초기 버전은 Claude Code의 `Stop` hook으로 즉시 변환했으나, hook이 JSONL 마지막 라인 flush 전에 발화하는 race condition으로 종결 메시지가 누락되는 사고가 있었습니다. cron sweep + `data-jsonl-size` 비교로 변경된 세션만 변환하여 race를 근본 회피합니다. 구버전 Stop hook은 install.sh가 자동으로 정리합니다.
 
 ### 제거
 
@@ -151,7 +153,7 @@ cd claude-session-dashboard
 ./uninstall.sh
 ```
 
-LaunchAgent, Stop hook, 생성된 HTML 파일을 모두 정리합니다.
+LaunchAgent, cron entry(구버전 Stop hook 포함), 생성된 HTML 파일을 모두 정리합니다.
 
 ## 설정
 
@@ -223,10 +225,10 @@ python3 convert_session.py --rename <session-id> "새 제목"
 
 ### 수동 설정 (install.sh를 사용하지 않는 경우)
 
-`install.sh`가 LaunchAgent와 Stop hook을 자동으로 등록합니다. 수동으로 하고 싶다면:
+`install.sh`가 LaunchAgent와 cron sweep을 자동으로 등록합니다. 수동으로 하고 싶다면:
 
 - **LaunchAgent**: `~/Library/LaunchAgents/com.claude.session-dashboard.plist` 직접 생성
-- **Stop hook**: `~/.claude/settings.json`의 `hooks.Stop` 배열에 `python3 /path/to/convert_session.py` 추가
+- **cron sweep**: `crontab -e`로 `* * * * * /path/to/cron-sweep.sh` 추가. `HEALTHCHECKS_URL` env 설정 시 외부 모니터링에 ping 송신 (옵션).
 
 ### 멀티 머신 구성 (고급)
 
