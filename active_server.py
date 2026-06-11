@@ -247,6 +247,13 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
 
     def _serve_file(self, filename, content_type='text/html; charset=utf-8'):
         filepath = os.path.join(LOGS_DIR, filename)
+        real = os.path.realpath(filepath)
+        base = os.path.realpath(LOGS_DIR)
+        # 경로 트래버설 차단: LOGS_DIR 경계 밖이면 거부 (proxy도 하지 않음)
+        if real != base and not real.startswith(base + os.sep):
+            self.send_response(404)
+            self.end_headers()
+            return
         if os.path.isfile(filepath):
             self.send_response(200)
             self.send_header('Content-Type', content_type)
