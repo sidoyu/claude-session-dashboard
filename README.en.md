@@ -192,7 +192,7 @@ For multiple Macs connected via Tailscale or another VPN:
 }
 ```
 
-The secondary machine then forwards all requests to the primary.
+The secondary machine then forwards all requests to the primary. Use the VPN (Tailscale) IP for `proxy_target_ip` and for the link between the two machines — the primary's allowlist checks the proxy's source IP, so a LAN IP would get `403` (add that range to the primary's `allow_cidr` if you must, at the cost of a weaker allowlist).
 
 > Note: a proxy machine is essentially "secondary browser → primary IP" automated. You can also just open `http://100.x.x.x:18080/` directly from the secondary machine's browser and skip the proxy entirely. Use the proxy only when you want LaunchAgent auto-start, a `localhost` bookmark, or other local conveniences.
 
@@ -239,7 +239,7 @@ Optionally export `HEALTHCHECKS_URL` to receive dead-man's-switch alerts when th
 ## Limitations
 
 - **Session control is macOS-only** (AppleScript). Viewer and search work on any OS.
-- **No authentication** — run on trusted networks or behind a VPN.
+- **No login authentication (but IP allowlist + CSRF guard built in)** — the server binds `0.0.0.0`, but every request's source IP is checked: only loopback and a private VPN range (default Tailscale `100.64.0.0/10`, configurable via `allow_cidr` in `config`) are allowed; everything else gets `403` (public and direct-LAN access are blocked). State-changing requests (start/stop/rename a session, etc.) are CSRF-guarded (Sec-Fetch-Site with Origin fallback). This is not login-based auth, so **never expose the port publicly** — no router port-forwarding, no Tailscale Funnel/Serve, no cloud inbound rule. Also **never put it behind a local forwarder that relays public traffic to `127.0.0.1`** (reverse proxy, Tailscale Serve, cloudflared, etc.) — loopback is allowed, so the IP allowlist would be bypassed. Use it only inside a VPN (WireGuard, etc.). (Self-test: from a device on the same LAN but with the VPN turned off, hit the server's LAN IP and confirm you get `403`.) Keep `allow_cidr` a private VPN range — any value outside private/VPN space (e.g. `0.0.0.0/0` or a public range) is ignored and falls back to the secure default (`100.64.0.0/10`).
 - **CDN dependency** — markdown rendering uses CDN. Export strips CDN for offline.
 - **Single-user** — personal use, not team access.
 - **180-second timeout for new sessions** — When starting a new session from the dashboard, the server waits synchronously for the first prompt to complete, with a 180-second (3-minute) timeout. Start remote sessions with a simple greeting like `"hi"` first, then connect via the [claude.ai/code](https://claude.ai/code) web app to continue with your actual task.

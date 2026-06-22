@@ -21,6 +21,7 @@ Port: 18080 (default, configurable via config.json)
 """
 
 import http.server
+import ipaddress
 import json
 import logging
 import logging.handlers
@@ -62,6 +63,7 @@ _config = {
     "remote_server_ip": "",       # Tailscale/VPN IP of the primary server (optional, for multi-machine setup)
     "proxy_target_ip": "",        # IP to proxy to (optional, for secondary machine)
     "machine_role": "auto",       # "auto", "primary", or "proxy"
+    "allow_cidr": "100.64.0.0/10",  # private VPN range allowed to connect (+ loopback); default = Tailscale CGNAT
 }
 
 # Load config from file if exists
@@ -72,6 +74,35 @@ if os.path.isfile(CONFIG_PATH):
 PORT = _config["port"]
 CLAUDE_PATH = _config["claude_path"]
 PROXY_TARGET_IP = _config.get("proxy_target_ip", "")
+
+# Access control: requests are allowed only from loopback or this private VPN range.
+# Default = Tailscale CGNAT (100.64.0.0/10); override via config "allow_cidr" for a
+# different VPN. allow_cidr must sit inside private/VPN/loopback space — a malformed,
+# wide-open (0.0.0.0/0, ::/0), or public value falls back to the secure default, so
+# config can never open the allowlist to the public internet.
+_PRIVATE_SUPERNETS = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("100.64.0.0/10"),   # CGNAT (Tailscale)
+    ipaddress.ip_network("127.0.0.0/8"),     # loopback
+    ipaddress.ip_network("fc00::/7"),        # IPv6 unique-local
+    ipaddress.ip_network("::1/128"),         # IPv6 loopback
+]
+
+def _parse_allowed_net(value):
+    default = ipaddress.ip_network("100.64.0.0/10")
+    try:
+        net = ipaddress.ip_network(value, strict=False)
+    except (ValueError, TypeError):
+        return default
+    for sn in _PRIVATE_SUPERNETS:
+        if net.version == sn.version and net.subnet_of(sn):
+            return net
+    _logger.warning("allow_cidr %r is not a private/VPN range; using secure default %s", value, default)
+    return default
+
+_ALLOWED_NET = _parse_allowed_net(_config.get("allow_cidr", "100.64.0.0/10"))
 
 # Auto-detect PROJECTS_DIR (find the first project directory under ~/.claude/projects/)
 def _find_projects_dir():
@@ -129,9 +160,119 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
         except Exception:
             pass
 
+    # ─── Access control ───
+    # The server binds 0.0.0.0 (all interfaces) so it works regardless of when the VPN
+    # comes up, but every request's source IP is checked: only loopback and the configured
+    # private VPN range (default Tailscale CGNAT 100.64.0.0/10) are allowed; everything
+    # else (public/LAN direct access) gets 403. This IP allowlist is the only thing that
+    # keeps the dashboard private — never expose the port publicly (no router port-forward,
+    # no Tailscale Funnel/Serve, no cloud inbound rule).
+    def _client_allowed(self):
+        """True if the requester IP is loopback or within the allowed VPN range."""
+        try:
+            ip = ipaddress.ip_address(self.client_address[0])
+        except (ValueError, IndexError, TypeError):
+            return False
+        return ip.is_loopback or ip in _ALLOWED_NET
+
+    def _deny_forbidden(self):
+        self.send_response(403)
+        self.send_header('Content-Length', '0')  # be explicit for HTTP/1.1 keep-alive
+        self.end_headers()
+
+    # State-changing (side-effect) paths are CSRF-guarded; read-only paths are exempt.
+    # /refresh re-runs conversion and regenerates files, so it counts as state-changing.
+    _STATE_CHANGE_PATHS = ('/start/', '/stop/', '/new-session', '/rename/', '/hidden-update', '/refresh')
+
+    def _is_state_change(self, path):
+        for p in self._STATE_CHANGE_PATHS:
+            if path == p or path.startswith(p):
+                return True
+        return False
+
+    def _csrf_ok(self):
+        """Block cross-site requests to state-changing endpoints. The IP allowlist alone
+        cannot stop a malicious page loaded on an *allowed* device from triggering session
+        start/stop via <img> or fetch(no-cors). Prefer Sec-Fetch-Site (allow only
+        same-origin/none); fall back to Origin (reject 'null' or a host mismatch). If
+        neither header is present, fail open and log it (non-browser/legacy clients).
+        Modern browsers always send Sec-Fetch-Site and cannot disable it from JS, so
+        browser-driven cross-site attacks are rejected; the only residual gap is a client
+        that sends neither Sec-Fetch-Site nor Origin (non-browser, or a legacy webview)."""
+        sfs = (self.headers.get('Sec-Fetch-Site') or '').strip().lower()
+        if sfs:
+            return sfs in ('same-origin', 'none')
+        origin = (self.headers.get('Origin') or '').strip()
+        if origin:
+            if origin.lower() == 'null':
+                return False
+            try:
+                o_netloc = urllib.parse.urlparse(origin).netloc.lower()
+            except Exception:
+                return False
+            host = (self.headers.get('Host') or '').strip().lower()
+            return bool(o_netloc) and o_netloc == host
+        # Neither header present → fail open + observability log (to spot header-less clients).
+        try:
+            client = self.client_address[0] if self.client_address else '-'
+            ua = (self.headers.get('User-Agent', '-') or '-')[:160]
+            _logger.info(f'CSRF-failopen(no headers) {self.command} '
+                         f'{urllib.parse.urlparse(self.path).path} client={client} ua="{ua}"')
+        except Exception:
+            pass
+        return True
+
+    def _deny_csrf(self):
+        try:
+            client = self.client_address[0] if self.client_address else '-'
+            _logger.info(f'CSRF-deny {self.command} {urllib.parse.urlparse(self.path).path} '
+                         f'sfs="{self.headers.get("Sec-Fetch-Site","")}" '
+                         f'origin="{self.headers.get("Origin","")}" client={client}')
+        except Exception:
+            pass
+        self.send_response(403)
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
+    def end_headers(self):
+        # Defense-in-depth on every response: the dashboard UI is never meant to be
+        # embedded, so block framing (clickjacking). A malicious page that frames the
+        # dashboard would run same-origin and could otherwise trigger state-changing
+        # clicks. Harmless on JSON/error responses.
+        self.send_header('X-Frame-Options', 'DENY')
+        super().end_headers()
+
+    def do_HEAD(self):
+        # Gate unimplemented verbs through the same allowlist so a disallowed IP always
+        # gets 403 (not the 501 a bare BaseHTTPRequestHandler would return).
+        if not self._client_allowed():
+            self._deny_forbidden()
+            return
+        # The same-origin PWA only uses GET/POST; HEAD is not served.
+        self.send_response(405)
+        self.send_header('Allow', 'GET, POST')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
+    def do_OPTIONS(self):
+        if not self._client_allowed():
+            self._deny_forbidden()
+            return
+        # No CORS, so no preflight is expected; report method not allowed.
+        self.send_response(405)
+        self.send_header('Allow', 'GET, POST')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def do_POST(self):
+        if not self._client_allowed():
+            self._deny_forbidden()
+            return
         self._log_request('POST')
         path = urllib.parse.urlparse(self.path).path
+        if self._is_state_change(path) and not self._csrf_ok():
+            self._deny_csrf()
+            return
         if path == '/hidden-update':
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length).decode()
@@ -151,9 +292,16 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_GET(self):
+        if not self._client_allowed():
+            self._deny_forbidden()
+            return
         self._log_request('GET')
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+
+        if self._is_state_change(path) and not self._csrf_ok():
+            self._deny_csrf()
+            return
 
         if path == '/active':
             self._json_response(get_active_sessions())
@@ -241,7 +389,8 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
     def _json_response(self, data, status=200):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        # No CORS header: this is a same-origin PWA; allowing any origin would let a
+        # malicious page on an allowlisted device read session/search data cross-origin.
         self.end_headers()
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
 
@@ -274,7 +423,7 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
             content_type = resp.headers.get('Content-Type', 'application/json')
             self.send_response(200)
             self.send_header('Content-Type', content_type)
-            self.send_header('Access-Control-Allow-Origin', '*')
+            # No CORS header (same-origin PWA; see _json_response).
             self.end_headers()
             self.wfile.write(data)
         except Exception as e:

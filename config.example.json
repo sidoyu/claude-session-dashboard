@@ -4,5 +4,6 @@
   "claude_path": "~/.local/bin/claude",
   "machine_role": "auto",
   "proxy_target_ip": "",
-  "remote_server_ip": ""
+  "remote_server_ip": "",
+  "allow_cidr": "100.64.0.0/10"
 }

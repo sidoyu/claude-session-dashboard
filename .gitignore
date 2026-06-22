@@ -10,8 +10,10 @@ search_index.json
 # Config with personal settings
 config.json
 
-# Server log
+# Server logs
 server.log
+active_server.log
+active_server.log.*
 
 # macOS
 .DS_Store
