@@ -1,5 +1,6 @@
 {
   "port": 18080,
+  "bind": "127.0.0.1",
   "lang": "ko",
   "claude_path": "~/.local/bin/claude",
   "machine_role": "auto",

@@ -154,6 +154,7 @@ After installation, **nothing else to do.** The server is always running, and HT
 ```json
 {
   "port": 18080,
+  "bind": "127.0.0.1",
   "lang": "en",
   "claude_path": "~/.local/bin/claude",
   "machine_role": "auto",
@@ -164,6 +165,7 @@ After installation, **nothing else to do.** The server is always running, and HT
 | Field | Description | Default |
 |-------|-------------|---------|
 | `port` | Server port | `18080` |
+| `bind` | Server bind address (IPv4). Default is local-only — set `"0.0.0.0"` to reach the dashboard from other devices over your VPN (the IP allowlist still applies) | `"127.0.0.1"` |
 | `lang` | UI language (`"ko"` or `"en"`) | `"ko"` |
 | `claude_path` | Path to `claude` CLI | `~/.local/bin/claude` |
 | `machine_role` | `"auto"`, `"primary"`, or `"proxy"` | `"auto"` |
@@ -177,12 +179,14 @@ After installation, **nothing else to do.** The server is always running, and HT
 | `CLAUDE_DASHBOARD_LANG` | UI language override | `ko` |
 | `CLAUDE_DASHBOARD_TZ` | Timezone offset from UTC | `9` (KST) |
 | `CLAUDE_PROJECTS_DIR` | Override projects directory | _(auto-detected)_ |
+| `CC_DASH_BIND` | Server bind address (overrides `bind` in `config.json`, IPv4) | `127.0.0.1` |
+| `CC_DASH_IDLE_EXIT_SECS` | Exit the server after N seconds without an allowed request (positive integer, 300+ recommended — a backstop for launcher-managed lifecycles) | _(unset — disabled)_ |
 
 ### Multi-machine setup (advanced)
 
 For multiple Macs connected via Tailscale or another VPN:
 
-1. **Primary machine** (where Claude Code runs): use the default config.
+1. **Primary machine** (where Claude Code runs): set `"bind": "0.0.0.0"` in `config.json` — the default (`127.0.0.1`) is local-only, so the secondary machine and other devices cannot connect (connection refused). The IP allowlist still applies.
 2. **Secondary machine**: set in `config.json`:
 
 ```json
@@ -239,7 +243,8 @@ Optionally export `HEALTHCHECKS_URL` to receive dead-man's-switch alerts when th
 ## Limitations
 
 - **Session control is macOS-only** (AppleScript). Viewer and search work on any OS.
-- **No login authentication (but IP allowlist + CSRF guard built in)** — the server binds `0.0.0.0`, but every request's source IP is checked: only loopback and a private VPN range (default Tailscale `100.64.0.0/10`, configurable via `allow_cidr` in `config`) are allowed; everything else gets `403` (public and direct-LAN access are blocked). State-changing requests (start/stop/rename a session, etc.) are CSRF-guarded (Sec-Fetch-Site with Origin fallback). This is not login-based auth, so **never expose the port publicly** — no router port-forwarding, no Tailscale Funnel/Serve, no cloud inbound rule. Also **never put it behind a local forwarder that relays public traffic to `127.0.0.1`** (reverse proxy, Tailscale Serve, cloudflared, etc.) — loopback is allowed, so the IP allowlist would be bypassed. Use it only inside a VPN (WireGuard, etc.). (Self-test: from a device on the same LAN but with the VPN turned off, hit the server's LAN IP and confirm you get `403`.) Keep `allow_cidr` a private VPN range — any value outside private/VPN space (e.g. `0.0.0.0/0` or a public range) is ignored and falls back to the secure default (`100.64.0.0/10`).
+- **Default bind is `127.0.0.1` (local-only)** — out of the box the server is reachable from this machine only. To reach it from other devices over your VPN, set `bind` to `0.0.0.0` (see Configuration). **⚠️ Upgrade note**: older versions bound `0.0.0.0`; if your phone or secondary machine can no longer connect after updating (connection refused), add `"bind": "0.0.0.0"` to `config.json`. **Never put the server behind a local forwarder that relays public traffic to `127.0.0.1`** (reverse proxy, Tailscale Serve, cloudflared, etc.) — even with a local bind, a forwarder relays public requests onto loopback and bypasses the IP allowlist below, so a local bind alone is not automatically safe.
+- **No login authentication (but IP allowlist + CSRF guard built in)** — even when bound to `0.0.0.0`, every request's source IP is checked: only loopback and a private VPN range (default Tailscale `100.64.0.0/10`, configurable via `allow_cidr` in `config`) are allowed; everything else gets `403` (public and direct-LAN access are blocked). State-changing requests (start/stop/rename a session, etc.) are CSRF-guarded (Sec-Fetch-Site with Origin fallback). This is not login-based auth, so **never expose the port publicly** — no router port-forwarding, no Tailscale Funnel/Serve, no cloud inbound rule. Use it only inside a VPN (WireGuard, etc.). (Self-test: from a device on the same LAN but with the VPN turned off, hit the server's LAN IP and confirm you get `403`.) Keep `allow_cidr` a private VPN range — any value outside private/VPN space (e.g. `0.0.0.0/0` or a public range) is ignored and falls back to the secure default (`100.64.0.0/10`).
 - **CDN dependency** — markdown rendering uses CDN. Export strips CDN for offline.
 - **Single-user** — personal use, not team access.
 - **180-second timeout for new sessions** — When starting a new session from the dashboard, the server waits synchronously for the first prompt to complete, with a 180-second (3-minute) timeout. Start remote sessions with a simple greeting like `"hi"` first, then connect via the [claude.ai/code](https://claude.ai/code) web app to continue with your actual task.

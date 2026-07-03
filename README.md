@@ -166,6 +166,8 @@ LaunchAgent, cron entry(구버전 Stop hook 포함), 생성된 HTML 파일을 �
 | `CLAUDE_DASHBOARD_TZ` | UTC 기준 시간대 오프셋 (예: KST는 `9`, EST는 `-5`) | `9` (KST) |
 | `CLAUDE_PROJECTS_DIR` | Claude Code 프로젝트 디렉토리 경로 지정 | _(자동 감지)_ |
 | `CLAUDE_DASHBOARD_DIR` | 생성된 HTML 출력 디렉토리 | _(스크립트와 같은 디렉토리)_ |
+| `CC_DASH_BIND` | 서버 bind 주소 (`config.json`의 `bind`보다 우선, IPv4) | `127.0.0.1` |
+| `CC_DASH_IDLE_EXIT_SECS` | 허용된 요청이 N초간 없으면 서버 자동 종료 (양의 정수, 300 이상 권장 — launcher가 서버 수명을 관리하는 구성의 백스톱용) | _(없음 — 비활성)_ |
 
 ### config.json (선택)
 
@@ -178,6 +180,7 @@ cp config.example.json config.json
 ```json
 {
   "port": 18080,
+  "bind": "127.0.0.1",
   "lang": "ko",
   "claude_path": "~/.local/bin/claude",
   "machine_role": "auto",
@@ -189,6 +192,7 @@ cp config.example.json config.json
 | 필드 | 설명 | 기본값 |
 |------|------|--------|
 | `port` | 서버 포트 | `18080` |
+| `bind` | 서버 bind 주소 (IPv4). 기본은 로컬 전용 — 다른 기기(폰 등)에서 VPN으로 접속하려면 `"0.0.0.0"`으로 변경 (IP allowlist는 계속 적용됨) | `"127.0.0.1"` |
 | `lang` | UI 언어 (`"ko"` 또는 `"en"`) | `"ko"` |
 | `claude_path` | `claude` CLI 바이너리 경로 | `~/.local/bin/claude` |
 | `machine_role` | `"auto"`, `"primary"`, `"proxy"` 중 선택 | `"auto"` |
@@ -234,7 +238,7 @@ python3 convert_session.py --rename <session-id> "새 제목"
 
 Tailscale 등 VPN으로 연결된 여러 대의 Mac에서 Claude Code를 사용하는 경우:
 
-1. **메인 머신** (Claude Code를 실행하는 곳): 기본 설정 그대로 사용
+1. **메인 머신** (Claude Code를 실행하는 곳): `config.json`에 `"bind": "0.0.0.0"` 설정 — 기본값(`127.0.0.1`)은 로컬 전용이라 보조 머신·다른 기기가 접속할 수 없습니다 (connection refused). IP allowlist는 그대로 적용됩니다.
 2. **보조 머신**: `config.json`에 다음과 같이 설정:
 
 ```json
@@ -292,7 +296,8 @@ Tailscale 등 VPN으로 연결된 여러 대의 Mac에서 Claude Code를 사용�
 ## 한계
 
 - **세션 제어(시작/중지/재개)는 macOS 전용** — Terminal.app을 AppleScript로 제어합니다. 뷰어와 검색은 모든 OS에서 동작합니다.
-- **로그인 인증 없음 (단, IP allowlist + CSRF 가드 내장)** — 서버는 `0.0.0.0`에 바인딩되지만, 요청자 IP를 검사해 **localhost와 사설 VPN 대역(기본 Tailscale `100.64.0.0/10`, `config`의 `allow_cidr`로 변경 가능)만 허용하고 나머지는 `403`으로 거부**합니다(공개망·LAN 직접 접속 차단). 상태 변경(세션 시작/중지/이름변경 등) 요청에는 **CSRF 가드**(Sec-Fetch-Site → Origin 폴백)가 적용됩니다. 다만 이는 로그인 기반 인증이 아니므로 **포트를 공개로 노출하지 마세요** — 라우터 포트포워딩·Tailscale Funnel/Serve 공개·클라우드 인바운드 개방 금지. 또한 **공개 트래픽을 `127.0.0.1`로 전달하는 로컬 포워더(reverse proxy, Tailscale Serve, cloudflared 등) 뒤에 두지 마세요** — loopback이 허용되므로 IP allowlist가 우회됩니다. VPN(WireGuard 등) 안에서만 사용하세요. (검증: 같은 LAN에 있지만 VPN을 끈 기기에서 서버 LAN IP로 접속해 `403`이 나오는지 확인.) `allow_cidr`은 반드시 사설 VPN 대역으로 두세요 — `0.0.0.0/0`이나 공인망 대역 등 사설/VPN 밖의 값은 무시되고 안전 기본값(`100.64.0.0/10`)으로 되돌아갑니다.
+- **기본 bind는 `127.0.0.1`(로컬 전용)** — 서버는 기본적으로 이 머신에서만 접속할 수 있습니다. 다른 기기(폰 등)에서 VPN으로 접속하려면 `bind`를 `0.0.0.0`으로 바꿔야 합니다(위 설정 참조). **⚠️ 업그레이드 주의**: 예전 버전은 `0.0.0.0`에 바인딩했으므로, 업데이트 후 폰·보조 머신에서 접속이 안 되면(connection refused) `config.json`에 `"bind": "0.0.0.0"`을 추가하세요. **공개 트래픽을 `127.0.0.1`로 전달하는 로컬 포워더(reverse proxy, Tailscale Serve, cloudflared 등) 뒤에 두지 마세요** — bind가 로컬이어도 포워더가 공개망 요청을 loopback으로 중계하면 아래 IP allowlist가 우회되므로, 로컬 bind가 곧 "무조건 안전"은 아닙니다.
+- **로그인 인증 없음 (단, IP allowlist + CSRF 가드 내장)** — `0.0.0.0`으로 바인딩해도 요청자 IP를 검사해 **localhost와 사설 VPN 대역(기본 Tailscale `100.64.0.0/10`, `config`의 `allow_cidr`로 변경 가능)만 허용하고 나머지는 `403`으로 거부**합니다(공개망·LAN 직접 접속 차단). 상태 변경(세션 시작/중지/이름변경 등) 요청에는 **CSRF 가드**(Sec-Fetch-Site → Origin 폴백)가 적용됩니다. 다만 이는 로그인 기반 인증이 아니므로 **포트를 공개로 노출하지 마세요** — 라우터 포트포워딩·Tailscale Funnel/Serve 공개·클라우드 인바운드 개방 금지. VPN(WireGuard 등) 안에서만 사용하세요. (검증: 같은 LAN에 있지만 VPN을 끈 기기에서 서버 LAN IP로 접속해 `403`이 나오는지 확인.) `allow_cidr`은 반드시 사설 VPN 대역으로 두세요 — `0.0.0.0/0`이나 공인망 대역 등 사설/VPN 밖의 값은 무시되고 안전 기본값(`100.64.0.0/10`)으로 되돌아갑니다.
 - **CDN 의존** — 세션 상세 페이지에서 marked.js와 highlight.js를 CDN에서 로드합니다. 내보내기 기능은 오프라인 열람을 위해 CDN을 제거합니다.
 - **개인 사용 전용** — 팀 공유용이 아닌 1인 사용 도구입니다.
 - **기본 시간대 KST** — 타임스탬프가 기본적으로 UTC+9(KST)입니다. `CLAUDE_DASHBOARD_TZ` 환경 변수로 변경 가능합니다.

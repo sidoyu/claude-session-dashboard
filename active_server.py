@@ -18,6 +18,9 @@ Serves the session dashboard and provides APIs for session control.
 - GET /search?q=     → Full-text search in JSONL files
 
 Port: 18080 (default, configurable via config.json)
+Bind: 127.0.0.1 (default; CC_DASH_BIND env or "bind" in config.json — see README)
+Idle-exit: off (default; CC_DASH_IDLE_EXIT_SECS env — exit after N seconds
+without an allowed request, for launcher-managed lifecycles)
 """
 
 import http.server
@@ -59,6 +62,7 @@ _NOISY_PATHS = ('/active', '/hidden', '/whoami')
 # Default configuration
 _config = {
     "port": 18080,
+    "bind": "127.0.0.1",          # bind address; 0.0.0.0 for VPN/remote access (see README)
     "claude_path": os.path.expanduser("~/.local/bin/claude"),
     "remote_server_ip": "",       # Tailscale/VPN IP of the primary server (optional, for multi-machine setup)
     "proxy_target_ip": "",        # IP to proxy to (optional, for secondary machine)
@@ -74,6 +78,69 @@ if os.path.isfile(CONFIG_PATH):
 PORT = _config["port"]
 CLAUDE_PATH = _config["claude_path"]
 PROXY_TARGET_IP = _config.get("proxy_target_ip", "")
+
+
+def _resolve_bind():
+    """Bind address: CC_DASH_BIND env > config.json "bind" > default 127.0.0.1.
+
+    Empty strings fall through — an empty value must not silently become
+    INADDR_ANY (socket treats '' as all interfaces). Only a full dotted-quad
+    IPv4 literal is accepted (the server socket is AF_INET): shorthand like
+    "0" or "127.1" would be resolved by bind() ("0" becomes 0.0.0.0!), which
+    defeats the explicit opt-in for non-local binds. An invalid value exits
+    with a clear error instead of silently binding a different interface."""
+    value = (os.environ.get("CC_DASH_BIND") or "").strip()
+    source = "CC_DASH_BIND"
+    if not value:
+        value = str(_config.get("bind") or "").strip()
+        source = '"bind" in config.json'
+    if not value:
+        return "127.0.0.1"
+    try:
+        ipaddress.IPv4Address(value)
+    except ipaddress.AddressValueError:
+        msg = (f"invalid {source}={value!r}: must be a full IPv4 literal "
+               f"such as 127.0.0.1 or 0.0.0.0")
+        _logger.error(msg)
+        raise SystemExit(msg)
+    return value
+
+
+BIND = _resolve_bind()
+
+
+def _parse_idle_exit_secs(raw):
+    """CC_DASH_IDLE_EXIT_SECS: positive int = enabled, anything else = off.
+
+    A set-but-unusable value warns instead of failing silently, so an operator
+    typo does not leave the backstop off while they believe it is on."""
+    if raw is None or str(raw).strip() == '':
+        return 0
+    try:
+        v = int(str(raw).strip())
+    except ValueError:
+        _logger.warning("CC_DASH_IDLE_EXIT_SECS=%r is not an integer; idle-exit disabled", raw)
+        return 0
+    if v <= 0:
+        if str(raw).strip() != '0':  # explicit 0 = intentional off, no warning
+            _logger.warning("CC_DASH_IDLE_EXIT_SECS=%r is not positive; idle-exit disabled", raw)
+        return 0
+    return v
+
+
+IDLE_EXIT_SECS = _parse_idle_exit_secs(os.environ.get("CC_DASH_IDLE_EXIT_SECS"))
+
+# Last allowed-request timestamp for idle-exit. Only requests that pass the IP
+# allowlist count as activity — denied clients, bare TCP connects, and port
+# scans must not keep an orphaned server alive (relevant for 0.0.0.0 binds).
+# Plain float assignment; atomic under the GIL, no lock needed.
+_last_activity = time.monotonic()
+
+
+def _touch_activity():
+    global _last_activity
+    _last_activity = time.monotonic()
+
 
 # Access control: requests are allowed only from loopback or this private VPN range.
 # Default = Tailscale CGNAT (100.64.0.0/10); override via config "allow_cidr" for a
@@ -161,12 +228,13 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
             pass
 
     # ─── Access control ───
-    # The server binds 0.0.0.0 (all interfaces) so it works regardless of when the VPN
-    # comes up, but every request's source IP is checked: only loopback and the configured
-    # private VPN range (default Tailscale CGNAT 100.64.0.0/10) are allowed; everything
-    # else (public/LAN direct access) gets 403. This IP allowlist is the only thing that
-    # keeps the dashboard private — never expose the port publicly (no router port-forward,
-    # no Tailscale Funnel/Serve, no cloud inbound rule).
+    # The server binds 127.0.0.1 by default (this machine only). When bound to
+    # 0.0.0.0 (opt-in, for VPN/remote access) every request's source IP is checked:
+    # only loopback and the configured private VPN range (default Tailscale CGNAT
+    # 100.64.0.0/10) are allowed; everything else (public/LAN direct access) gets 403.
+    # The allowlist also runs on loopback binds (harmless) and is the only thing that
+    # keeps a 0.0.0.0 dashboard private — never expose the port publicly (no router
+    # port-forward, no Tailscale Funnel/Serve, no cloud inbound rule).
     def _client_allowed(self):
         """True if the requester IP is loopback or within the allowed VPN range."""
         try:
@@ -248,6 +316,7 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
         if not self._client_allowed():
             self._deny_forbidden()
             return
+        _touch_activity()
         # The same-origin PWA only uses GET/POST; HEAD is not served.
         self.send_response(405)
         self.send_header('Allow', 'GET, POST')
@@ -258,6 +327,7 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
         if not self._client_allowed():
             self._deny_forbidden()
             return
+        _touch_activity()
         # No CORS, so no preflight is expected; report method not allowed.
         self.send_response(405)
         self.send_header('Allow', 'GET, POST')
@@ -268,6 +338,7 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
         if not self._client_allowed():
             self._deny_forbidden()
             return
+        _touch_activity()
         self._log_request('POST')
         path = urllib.parse.urlparse(self.path).path
         if self._is_state_change(path) and not self._csrf_ok():
@@ -295,6 +366,7 @@ class SessionHandler(http.server.BaseHTTPRequestHandler):
         if not self._client_allowed():
             self._deny_forbidden()
             return
+        _touch_activity()
         self._log_request('GET')
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
@@ -778,6 +850,27 @@ def refresh_sessions():
         return {'status': 'error', 'message': str(e)}
 
 
+# ─── Idle-exit watchdog ───
+
+def _idle_exit_watchdog(server):
+    """Shut the server down after IDLE_EXIT_SECS without an allowed request.
+
+    Backstop for launcher-managed lifecycles (launcher starts the server, opens a
+    browser window, and kills the server when the window closes — if that kill is
+    ever missed, this reclaims the orphaned process). Runs off the serve_forever
+    thread, so calling server.shutdown() here is safe."""
+    while True:
+        time.sleep(5)
+        idle = time.monotonic() - _last_activity
+        if idle >= IDLE_EXIT_SECS:
+            msg = (f'idle-exit: no allowed request for {int(idle)}s '
+                   f'(CC_DASH_IDLE_EXIT_SECS={IDLE_EXIT_SECS}); shutting down')
+            _logger.info(msg)
+            print(msg, flush=True)
+            server.shutdown()
+            return
+
+
 # ─── Main ───
 
 if __name__ == '__main__':
@@ -791,9 +884,24 @@ if __name__ == '__main__':
 
     class ThreadingServer(http.server.ThreadingHTTPServer):
         daemon_threads = True
-    server = ThreadingServer(('0.0.0.0', PORT), SessionHandler)
-    print(f'Session server on http://0.0.0.0:{PORT}/')
+    server = ThreadingServer((BIND, PORT), SessionHandler)
+    print(f'Session server on http://{BIND}:{PORT}/')
+    if ipaddress.ip_address(BIND).is_loopback:  # BIND is a validated IPv4 literal
+        print('Bound to loopback: reachable from this machine only. For VPN/remote '
+              'access set CC_DASH_BIND=0.0.0.0 (or "bind" in config.json) — the IP '
+              'allowlist still applies.')
+    if IDLE_EXIT_SECS:
+        if IDLE_EXIT_SECS < 300:
+            warn = (f'CC_DASH_IDLE_EXIT_SECS={IDLE_EXIT_SECS} is low; long requests '
+                    f'(/refresh up to 60s, /new-session up to 180s) may be cut off '
+                    f'mid-flight. 300 or more is recommended.')
+            _logger.warning(warn)
+            print(f'WARNING: {warn}')
+        print(f'Idle-exit: exits after {IDLE_EXIT_SECS}s without an allowed request.')
+        threading.Thread(target=_idle_exit_watchdog, args=(server,), daemon=True).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
+        pass
+    finally:
         server.server_close()
