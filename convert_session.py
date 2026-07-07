@@ -104,6 +104,9 @@ STRINGS = {
         "col_messages": "메시지",
         "new_session_placeholder": "새 세션을 시작할 메시지를 입력하세요... (Cmd+Enter로 전송)",
         "new_session_btn": "+ 새 세션",
+        "empty_title": "아직 표시할 세션이 없습니다",
+        "empty_hint": "Claude Code로 세션을 진행한 뒤 새로고침하세요.",
+        "empty_refresh": "새로고침",
         "creating": "생성 중",
         "session_started": "세션 시작됨!",
         "enter_message": "시작 메시지를 입력하세요.",
@@ -178,6 +181,9 @@ STRINGS = {
         "col_messages": "Messages",
         "new_session_placeholder": "Type a message to start a new session... (Cmd+Enter to send)",
         "new_session_btn": "+ New Session",
+        "empty_title": "No sessions to show yet",
+        "empty_hint": "Start a session in Claude Code, then refresh.",
+        "empty_refresh": "Refresh",
         "creating": "Creating",
         "session_started": "Session started!",
         "enter_message": "Please enter a message.",
@@ -1217,6 +1223,20 @@ def build_index(sessions):
         )
 
     tbody_content = ''.join(rows)
+    if not sessions:
+        # 빈 상태(세션 0건)에도 안내 페이지를 렌더한다. index.html 미생성 시 첫 접속이
+        # 404 가 되던 문제(설치기 대시보드 필수설치화 후 모든 사용자가 밟음) 대응.
+        # 문구는 t() 로 미리 지역화(localize_html 재변환 충돌 없음). 새로고침은 /refresh 후 reload.
+        tbody_content = (
+            '<tr class="empty-state"><td colspan="8" '
+            'style="text-align:center;padding:48px 16px;color:var(--text-muted);">'
+            f'<div style="font-size:1.05em;margin-bottom:8px;">{html.escape(t("empty_title"))}</div>'
+            f'<div style="margin-bottom:16px;">{html.escape(t("empty_hint"))}</div>'
+            '<button type="button" onclick="'
+            "fetch('/refresh').then(function(){location.reload();}).catch(function(){location.reload();})"
+            f'" style="padding:6px 16px;cursor:pointer;">{html.escape(t("empty_refresh"))}</button>'
+            '</td></tr>'
+        )
 
     INDEX_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -2228,14 +2248,14 @@ def main():
     all_sessions = [s for s in all_sessions if s['session_id'] not in converted_ids]
     all_sessions.extend(converted)
 
+    # 세션 유무와 무관하게 index.html·search.html 을 항상 쓴다(0건이면 빈 상태 안내 렌더).
+    # 이전에는 all_sessions 가 있을 때만 생성해 0건 설치 직후 첫 접속이 404 였다.
+    build_search_index(all_sessions)
+    build_index(all_sessions)
     if all_sessions:
-        build_search_index(all_sessions)
-        build_index(all_sessions)
         print(f"\nIndex updated: {len(all_sessions)} sessions -> {OUTPUT_DIR}")
-    elif converted:
-        print(f"\n{len(converted)} sessions converted")
     else:
-        print("No sessions to convert.")
+        print(f"\nNo sessions yet — empty-state index written -> {OUTPUT_DIR}")
 
     # Auto-invalidate the Service Worker cache whenever this script or sw.js
     # changes, so PWA users pick up the new version on next visit.
